@@ -1,0 +1,342 @@
+import librosa
+import numpy as np
+
+# Load audio file
+y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
+
+# Calculate pitch (nada)
+pitch, _ = librosa.piptrack(y=y, sr=sr)
+pitch = np.mean(pitch)
+
+# Calculate intonation (intonasi)
+# Anda harus mengganti ini dengan cara yang sesuai untuk menghitung intonasi
+intonasi = 0  # Misalnya, di sini kami menganggap intonasi sebagai nilai tetap 0
+
+# Calculate volume (volume)
+volume = librosa.feature.rms(y=y)
+volume = np.mean(volume)
+
+# Map values to specific ranges
+def map_value(x, x_min, x_max, y_min, y_max):
+    return (x - x_min) / (x_max - x_min) * (y_max - y_min) + y_min
+
+nada = map_value(pitch, 0, 1000, 0, 30)  # Rentang nilai Nada: 0-30
+intonasi = map_value(intonasi, 0, 1, 0, 30)  # Rentang nilai Intonasi: 0-30
+volume = map_value(volume, 0, 1, 0, 30)  # Rentang nilai Volume: 0-30
+
+# Function to map range to category
+def map_nada_category(x):
+    if x < 11:
+        return "Rendah"
+    elif 11 <= x <= 20:
+        return "Sedang"
+    else:
+        return "Tinggi"
+
+def map_intonasi_category(x):
+    if x < 11:
+        return "Turun"
+    elif 11 <= x <= 20:
+        return "Datar"
+    else:
+        return "Naik"
+
+def map_volume_category(x):
+    if x < 11:
+        return "Pelan"
+    elif 11 <= x <= 20:
+        return "Sedang"
+    else:
+        return "Keras"
+
+# Print results with integer ranges and categories
+print("Nada =", map_nada_category(nada), "=", int(nada))
+print("Intonasi =", map_intonasi_category(intonasi), "=", int(intonasi))
+print("Volume =", map_volume_category(volume), "=", int(volume))
+
+####################################
+import librosa
+import numpy as np
+
+# Memuat file audio
+y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
+
+# Menghitung nilai nada dari sinyal audio
+pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+
+# Menghitung nilai median nada dari semua frame
+pitch_values = pitch[pitch > 0]
+median_pitch = np.median(pitch_values)
+
+# Menghitung perbedaan nada antar frame untuk mendapatkan nilai intonasi
+pitch_diff = np.diff(pitch_values)
+intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
+
+# Menghitung nilai RMS dari sinyal audio (Volume)
+rms = np.sqrt(np.mean(y**2))
+
+# Inisialisasi bobot dan bias secara acak
+w1 = np.random.rand()
+w2 = np.random.rand()
+w3 = np.random.rand()
+b = np.random.rand()
+
+# Data latih Anda (contoh sederhana, Anda akan memiliki data yang lebih banyak)
+# X_train berisi fitur-fitur (X1, X2, X3), y_train berisi label (1 untuk audio yang diminati, -1 untuk yang tidak)
+X_train = np.array([[median_pitch, intonation, rms]])
+y_train = np.array([1])  # Misalnya, Anda mempertimbangkan audio ini sebagai contoh audio yang Anda minati
+
+# Metode SGD untuk memperbarui bobot dan bias
+learning_rate = 0.01
+epochs = 100
+
+for epoch in range(epochs):
+    for i, x in enumerate(X_train):
+        # Menghitung nilai prediksi dengan formula SVM linear
+        pred = w1 * x[0] + w2 * x[1] + w3 * x[2] + b
+        
+        # Memperbarui bobot dan bias berdasarkan gradien
+        if y_train[i] * pred < 1:  # Hanya perbarui jika prediksi tidak sesuai dengan label
+            w1 += learning_rate * (y_train[i] * x[0] - 2 * w1)
+            w2 += learning_rate * (y_train[i] * x[1] - 2 * w2)
+            w3 += learning_rate * (y_train[i] * x[2] - 2 * w3)
+            b += learning_rate * y_train[i]
+
+# Setelah proses pelatihan selesai, Anda memiliki bobot (w1, w2, w3) dan bias (b)
+print("Bobot (w1, w2, w3):", w1, w2, w3)
+print("Bias (b):", b)
+
+
+###########################################
+import librosa
+import numpy as np
+
+# Memuat file audio
+y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
+
+# Menghitung nilai nada dari sinyal audio
+pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+
+# Menghitung nilai median nada dari semua frame
+pitch_values = pitch[pitch > 0]
+median_pitch = np.median(pitch_values)
+
+# Menghitung perbedaan nada antar frame untuk mendapatkan nilai intonasi
+pitch_diff = np.diff(pitch_values)
+intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
+
+# Menghitung nilai RMS dari sinyal audio (Volume)
+rms = np.sqrt(np.mean(y**2))
+
+# Inisialisasi bobot secara acak
+w1 = np.random.rand()
+w2 = np.random.rand()
+w3 = np.random.rand()
+
+# Inisialisasi bias secara acak
+b = np.random.rand()
+
+# Nilai fitur X1, X2, dan X3
+X1 = median_pitch
+X2 = intonation
+X3 = rms
+
+# Rumus SVM Linear
+f_x = w1 * X1 + w2 * X2 + w3 * X3 + b
+
+# Cetak nilai nada, intonasi, dan volume dari file audio
+print(' (X1) Nada:', median_pitch)
+print(' (X2) Intonasi:', intonation)
+print(' (X3) Volume:', rms)
+
+# Cetak nilai bobot (w1, w2, w3) dan nilai bias (b)
+print("Bobot (w1, w2, w3):", w1, w2, w3)
+print("Bias (b):", b)
+
+
+############################################
+import librosa
+import numpy as np
+
+# Memuat file audio
+y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
+
+# Menghitung nilai nada dari sinyal audio
+pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+
+# Menghitung nilai median nada dari semua frame
+pitch_values = pitch[pitch > 0]
+median_pitch = np.median(pitch_values)
+
+# Menghitung perbedaan nada antar frame untuk mendapatkan nilai intonasi
+pitch_diff = np.diff(pitch_values)
+intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
+
+# Menghitung nilai RMS dari sinyal audio (Volume)
+rms = np.sqrt(np.mean(y**2))
+
+# Inisialisasi bobot secara acak
+w1 = np.random.rand()
+w2 = np.random.rand()
+w3 = np.random.rand()
+
+# Inisialisasi bias secara acak
+b = np.random.rand()
+
+# Contoh label
+y_label = 1
+
+# Metode SGD untuk memperbarui bobot dan bias
+learning_rate = 0.01
+epochs = 100
+
+for epoch in range(epochs):
+    # Menghitung nilai prediksi dengan formula SVM linear
+    pred = w1 * median_pitch + w2 * intonation + w3 * rms + b
+    
+    # Memperbarui bobot dan bias berdasarkan gradien
+    if y_label * pred < 1:  # Hanya perbarui jika prediksi tidak sesuai dengan label
+        w1 += learning_rate * (y_label * median_pitch - 2 * w1)
+        w2 += learning_rate * (y_label * intonation - 2 * w2)
+        w3 += learning_rate * (y_label * rms - 2 * w3)
+        b += learning_rate * y_label
+
+# Cetak nilai nada, intonasi, dan volume dari file audio
+print(' (X1) Nada:', median_pitch)
+print(' (X2) Intonasi:', intonation)
+print(' (X3) Volume:', rms)
+
+# Setelah proses pelatihan selesai, Anda memiliki bobot (w1, w2, w3) dan bias (b)
+print("Bobot (w1, w2, w3):", w1, w2, w3)
+print("Bias (b):", b)
+
+############################ Perhitungan hyperplane (gauss) tanpa W
+import numpy as np
+
+# Sistem persamaan linear
+# Persamaan 1: w1*15 + w2*25 + w3*35 + b >= 1
+# Persamaan 2: w1*30 + w2*20 + w3*10 + b >= 1
+# Persamaan 3: w1*25 + w2*35 + w3*15 + b >= 1
+
+# Matriks koefisien
+A = np.array([[15.0, 25.0, 35.0],
+              [30.0, 20.0, 10.0],
+              [25.0, 35.0, 15.0]])
+
+# Vektor hasil
+b_vector = np.array([1.0, 1.0, 1.0])
+
+# Matriks augmented
+A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
+
+# Langkah eliminasi Gauss
+for i in range(len(A_augmented)):
+    # Pilih baris pivoting
+    pivot_row = A_augmented[i]
+    
+    # Cek apakah elemen diagonal nol
+    if pivot_row[i] == 0:
+        continue
+    
+    # Normalisasi baris pivoting
+    pivot_row = pivot_row / pivot_row[i]
+    A_augmented[i] = pivot_row
+    
+    # Eliminasi
+    for j in range(i + 1, len(A_augmented)):
+        factor = A_augmented[j, i]
+        A_augmented[j] -= factor * pivot_row
+
+# Solusi
+w1 = A_augmented[0, -2]
+w2 = A_augmented[1, -2]
+w3 = A_augmented[2, -3]
+b = A_augmented[0, -1]
+
+print("Nilai w1:", w1)
+print("Nilai w2:", w2)
+print("Nilai w3:", w3)
+print("Nilai b:", b)
+
+# Persamaan hyperplane
+print("Persamaan hyperplane:")
+print(f"{w1}x1 + {w2}x2 + {w3}x3 + {b}")
+
+# Input nilai x1, x2, x3
+x1 = float(input("Masukkan nilai x1: "))
+x2 = float(input("Masukkan nilai x2: "))
+x3 = float(input("Masukkan nilai x3: "))
+
+# Hitung hasil akhir
+hasil = x1 + x2 + x3 + (b)
+print("Hasil akhir:", hasil)
+
+###################### Persamaan hyperplane (Gauss) gunakan W  
+import numpy as np
+
+# Sistem persamaan linear
+# Persamaan 1: w1*15 + w2*25 + w3*35 + b >= 1
+# Persamaan 2: w1*30 + w2*20 + w3*10 + b >= 1
+# Persamaan 3: w1*25 + w2*35 + w3*15 + b >= 1
+
+# Matriks koefisien
+A = np.array([[15.0, 25.0, 35.0],
+              [30.0, 20.0, 10.0],
+              [25.0, 35.0, 15.0]])
+
+# Vektor hasil
+b_vector = np.array([1.0, 1.0, 1.0])
+
+# Matriks augmented
+A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
+
+# Langkah eliminasi Gauss
+for i in range(len(A_augmented)):
+    # Pilih baris pivoting
+    pivot_row = A_augmented[i]
+    
+    # Cek apakah elemen diagonal nol
+    if pivot_row[i] == 0:
+        continue
+    
+    # Normalisasi baris pivoting
+    pivot_row = pivot_row / pivot_row[i]
+    A_augmented[i] = pivot_row
+    
+    # Eliminasi
+    for j in range(i + 1, len(A_augmented)):
+        factor = A_augmented[j, i]
+        A_augmented[j] -= factor * pivot_row
+
+# Solusi
+w1 = A_augmented[0, -2]
+w2 = A_augmented[1, -2]
+w3 = A_augmented[2, -3]
+b = A_augmented[0, -1]
+
+print("Nilai w1:", w1)
+print("Nilai w2:", w2)
+print("Nilai w3:", w3)
+print("Nilai b:", b)
+
+# Persamaan hyperplane
+print("Persamaan hyperplane:")
+print(f"{w1}x1 + {w2}x2 + {w3}x3 + {b}")
+
+# Input nilai x1, x2, x3
+x1 = float(input("Masukkan nilai x1: "))
+x2 = float(input("Masukkan nilai x2: "))
+x3 = float(input("Masukkan nilai x3: "))
+
+# Hitung hasil akhir
+hasil = w1*x1 + w2*x2 + w3*x3 + (b)
+print("Hasil akhir:", hasil)
+
+Rencana Anda terdengar bagus! Berikut langkah-langkah umum yang dapat Anda ambil untuk menerapkan rencana tersebut:
+
+Mengambil Nilai dari Audio: Gunakan koding Python yang telah Anda buat sebelumnya untuk mengekstraksi nada, intonasi, dan volume dari audio. Pastikan untuk mengonversi nilai-nilai ini ke dalam rentang yang sesuai dengan model klasifikasi yang Anda gunakan di koding perhitungan Gauss.
+Menyimpan Nilai ke Database: Setelah Anda mendapatkan nilai nada, intonasi, dan volume, masukkan nilai-nilai ini ke dalam database. Pastikan struktur database Anda sesuai dengan kebutuhan, termasuk kolom untuk nilai x1, x2, dan x3.
+Mengambil Nilai dari Database: Saat Anda ingin menjalankan koding perhitungan Gauss, ambil nilai x1, x2, dan x3 dari database sesuai dengan data yang telah Anda simpan.
+Menjalankan Koding Perhitungan Gauss: Gunakan nilai x1, x2, dan x3 yang telah Anda ambil dari database sebagai input untuk koding perhitungan Gauss Anda.
+Melakukan Klasifikasi: Setelah Anda mendapatkan hasil perhitungan, Anda bisa menentukan klasifikasi (misalnya, -1 untuk marah dan +1 untuk tidak marah) berdasarkan hasil tersebut.
+Pastikan untuk menguji setiap langkah dari proses ini untuk memastikan semuanya berjalan sesuai harapan. Juga, pastikan untuk mempertimbangkan keamanan data saat bekerja dengan database, terutama saat menyimpan data sensitif seperti hasil pengolahan audio. Jika Anda memiliki pertanyaan lebih lanjut atau membutuhkan bantuan lebih lanjut, jangan ragu untuk bertanya!

@@ -1,0 +1,158 @@
+from flask import Flask, render_template, redirect, request, send_from_directory
+import mysql.connector
+import librosa
+import numpy as np
+import os
+
+app = Flask(__name__)
+
+# Konfigurasi koneksi ke database
+db_host = 'localhost'
+db_user = 'root'
+db_password = ''
+db_database = 'audio'
+
+# Path ke folder audio_ori di luar direktori static
+AUDIO_FOLDER = os.path.join(app.root_path, 'audio_ori')
+
+# Fungsi untuk mendapatkan data dari database
+def get_data_from_database():
+    try:
+        connection = mysql.connector.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_database
+        )
+
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("SELECT nama_audio, nada_ori, intonasi_ori, volume_ori, label_manual, label_otomatis FROM audio_data")
+
+        data = cursor.fetchall()
+
+        cursor.close()
+        connection.close()
+
+        return data
+
+    except Exception as e:
+        print("Error:", e)
+        return None
+
+# Fungsi untuk mengekstrak fitur audio
+def extract_audio_features(audio_file):
+    try:
+        # Muat file audio
+        y, sr = librosa.load(audio_file)
+
+        # Hitung nilai nada dari audio
+        pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+        
+        # Hitung nilai intonasi
+        pitch_values = pitch[pitch > 0]
+        median_pitch = np.median(pitch_values)
+        pitch_diff = np.diff(pitch_values)
+        intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
+
+        # Hitung nilai volume
+        rms = np.sqrt(np.mean(y**2))
+
+        # Konversi tipe data numpy.float32 ke float
+        median_pitch = float(median_pitch)
+        intonation = float(intonation)
+        rms = float(rms)
+
+        return median_pitch, intonation, rms
+
+    except Exception as e:
+        print("Error extracting audio features:", e)
+        return None, None, None
+
+# Route untuk mengirimkan file audio
+@app.route('/audio/<path:filename>')
+def download_file(filename):
+    return send_from_directory(AUDIO_FOLDER, filename)
+
+# Route untuk setiap halaman web
+@app.route('/')  
+def index():
+    return redirect('/Beranda')
+
+@app.route('/Beranda')
+def beranda():
+    return render_template('index.html')
+
+@app.route('/SingleAudio')
+def single_audio():
+    return render_template('single_audio.html')
+
+@app.route('/HasilSingleAudio', methods=['GET', 'POST'])
+def hasil_single_audio():  
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect('/SingleAudio')
+
+        audio_file = request.files['file']
+
+        if audio_file.filename == '':
+            return redirect('/SingleAudio')
+
+        # Dapatkan nama file audio
+        file_name = audio_file.filename
+
+        # Simpan file sementara
+        temp_file_path = 'temp_audio.wav'
+        audio_file.save(temp_file_path)
+
+        # Ekstrak fitur audio
+        nada, intonasi, volume = extract_audio_features(temp_file_path)
+
+        # Hapus file sementara
+        os.remove(temp_file_path)
+
+        if nada is not None and intonasi is not None and volume is not None:
+            try:
+                connection = mysql.connector.connect(
+                    host=db_host,
+                    user=db_user,
+                    password=db_password,
+                    database=db_database
+                )
+
+                cursor = connection.cursor()
+
+                # Masukkan data ke database
+                cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori) VALUES (%s, %s, %s, %s)", (file_name, nada, intonasi, volume))
+                connection.commit()
+
+                cursor.close()
+                connection.close()
+
+                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
+
+            except Exception as e:
+                print("Error inserting data into database:", e)
+                print("Type of feature values:", type(nada), type(intonasi), type(volume))
+                return "Error occurred. Please try again later."
+
+        else:
+            return "Error extracting audio features. Please try again with a different file."
+
+    elif request.method == 'GET':
+        # Nilai default jika belum ada file audio yang diproses
+        nada = None
+        intonasi = None
+        volume = None
+        return redirect('/SingleAudio')  # Redirect ke halaman Single Audio jika metode GET diakses
+
+@app.route('/DataLatih')  
+def data_latih():
+    return render_template('data_latih.html')
+
+@app.route('/HasilDataLatih')  
+def validasi():
+    return render_template('hasil_datalatih.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
