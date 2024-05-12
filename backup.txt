@@ -340,3 +340,23 @@ Mengambil Nilai dari Database: Saat Anda ingin menjalankan koding perhitungan Ga
 Menjalankan Koding Perhitungan Gauss: Gunakan nilai x1, x2, dan x3 yang telah Anda ambil dari database sebagai input untuk koding perhitungan Gauss Anda.
 Melakukan Klasifikasi: Setelah Anda mendapatkan hasil perhitungan, Anda bisa menentukan klasifikasi (misalnya, -1 untuk marah dan +1 untuk tidak marah) berdasarkan hasil tersebut.
 Pastikan untuk menguji setiap langkah dari proses ini untuk memastikan semuanya berjalan sesuai harapan. Juga, pastikan untuk mempertimbangkan keamanan data saat bekerja dengan database, terutama saat menyimpan data sensitif seperti hasil pengolahan audio. Jika Anda memiliki pertanyaan lebih lanjut atau membutuhkan bantuan lebih lanjut, jangan ragu untuk bertanya!
+
+          <!-- Nilai w1-w3 dan b -->
+          <div style="text-align: center;">
+              <h4>Nilai w1, w2, w3 dan bias :</h4>
+              <p>Nilai w1: {{ w1 }}</p>
+              <p>Nilai w2: {{ w2 }}</p>
+              <p>Nilai w3: {{ w3 }}</p>
+              <p>Nilai b: {{ b }}</p>
+          </div>
+      
+          <!-- Persamaan Hyperplane -->
+          <div style="text-align: center;">
+              <h4>Persamaan Hyperplane:</h4>
+              <p>{{ w1 }}x1 + {{ w2 }}x2 + {{ w3 }}x3 + {{ b }}</p>
+          </div>
+
+            <div style="text-align: center;">
+              <h4>Persamaan 3 Variabel:</h4>
+              <p>Persamaan 1: {{ nada }}w1 + {{ intonasi }}w2 + {{ volume }}w3 + b >_ 1</p>
+          </div>

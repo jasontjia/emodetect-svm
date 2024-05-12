@@ -1,9 +1,9 @@
 import numpy as np
 
 # Sistem persamaan linear
-# Persamaan 1: w1*15 + w2*25 + w3*35 + b >= 1
-# Persamaan 2: w1*30 + w2*20 + w3*10 + b >= 1
-# Persamaan 3: w1*25 + w2*35 + w3*15 + b >= 1
+# Persamaan 1: w1*15 + w2*25 + w3*35 + b >_ 1
+# Persamaan 2: w1*30 + w2*20 + w3*10 + b >_ 1
+# Persamaan 3: w1*25 + w2*35 + w3*15 + b >_ 1
 
 # Matriks koefisien
 A = np.array([[15.0, 25.0, 35.0],
@@ -15,6 +15,12 @@ b_vector = np.array([1.0, 1.0, 1.0])
 
 # Matriks augmented
 A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
+
+# Persamaan 3 Variabel
+print("Persamaan 3 Variabel:")
+for i, row in enumerate(A):
+    equation = f"Persamaan {i+1}: {' + '.join([f'{row[j]}w{j+1}' for j in range(len(row))])} + (b) >_ 1"
+    print(equation)
 
 # Langkah eliminasi Gauss
 for i in range(len(A_augmented)):
@@ -40,6 +46,7 @@ w2 = A_augmented[1, -2]
 w3 = A_augmented[2, -3]
 b = A_augmented[0, -1]
 
+# Cetak Nilai w1-w3 dan b
 print("Nilai w1:", w1)
 print("Nilai w2:", w2)
 print("Nilai w3:", w3)
