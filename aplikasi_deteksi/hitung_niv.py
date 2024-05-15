@@ -5,7 +5,7 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
 
 # Muat file audio
-y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/test5.wav')
+y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/test6.wav')
 
 # Hitung nilai nada dari audio
 pitch, _ = librosa.core.piptrack(y=y, sr=sr)

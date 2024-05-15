@@ -165,8 +165,8 @@
     
           // Validasi jenis file dan ukuran
           if (
-            (fileType === "audio/mp3" || fileType === "audio/wav") &&
-            file.size <= 3 * 1024 * 1024
+             
+            file.size <= 4 * 1024 * 1024
           ) {
             fileNameField.innerHTML = `<p>Nama File: ${fileName} <button type="button" class="btn-close" aria-label="Close" id="clearFile"></button></p>`;
             fileInfo.innerHTML = `<p>Ukuran: ${fileSize} MB</p>`;

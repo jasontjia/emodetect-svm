@@ -145,50 +145,22 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Hasil Perhitugnan
+# Hasil Perhitungan
 @app.route('/HasilSingleAudio')
 def hasil_single_audio_page():
-    data = get_data_from_database()  # Assuming this function retrieves data from the database
+    data = get_data_from_database()
+    if data is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
     nada = session.get('nada')
     intonasi = session.get('intonasi')
     volume = session.get('volume')
     file_name = session.get('file_name')
 
     if nada is not None and intonasi is not None and volume is not None:
-        # Inisialisasi matriks koefisien
-        A_augmented = np.array([[nada, intonasi, volume]])
 
-        # Langkah eliminasi Gauss
-        for i in range(len(A_augmented)):
-            # Pilih baris pivoting
-            pivot_row = A_augmented[i]
-            
-            # Cek apakah elemen diagonal nol
-            if pivot_row[i] == 0:
-                continue
-            
-            # Normalisasi baris pivoting
-            pivot_row = pivot_row / pivot_row[i]
-            A_augmented[i] = pivot_row
-            
-            # Eliminasi
-            for j in range(i + 1, len(A_augmented)):
-                factor = A_augmented[j, i]
-                A_augmented[j] -= factor * pivot_row
-
-        # Solusi
-        if len(A_augmented) > 0:
-            w1 = A_augmented[0, 0]
-            w2 = A_augmented[0, 1]
-            w3 = A_augmented[0, 2]
-            b = 0  # Tidak ada elemen b dalam matriks A_augmented
-
-            return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
-        else:
-            return "Error occurred in solving linear equations."
-
-    else:
-        return "Error occurred. Please try again later."
+                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data)
+     
 # Form Unggah
 @app.route('/FormUnggah', methods=['GET', 'POST'])
 def form_unggah():  

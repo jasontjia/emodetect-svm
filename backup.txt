@@ -360,3 +360,369 @@ Pastikan untuk menguji setiap langkah dari proses ini untuk memastikan semuanya 
               <h4>Persamaan 3 Variabel:</h4>
               <p>Persamaan 1: {{ nada }}w1 + {{ intonasi }}w2 + {{ volume }}w3 + b >_ 1</p>
           </div>
+
+# Hasil Perhitungan Eliminasi Gauss Biasa
+@app.route('/HasilSingleAudio')
+def hasil_single_audio_page():
+    data = get_data_from_database()
+    if data is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    nada = session.get('nada')
+    intonasi = session.get('intonasi')
+    volume = session.get('volume')
+    file_name = session.get('file_name')
+
+    if nada is not None and intonasi is not None and volume is not None:
+        if len(data) > 0:
+            # Inisialisasi matriks koefisien
+            A_augmented = []
+
+            # Ambil nilai dari database untuk membentuk matriks A dan konversi ke float
+            for record in data:
+                nada_ori = float(record['nada_ori'])
+                intonasi_ori = float(record['intonasi_ori'])
+                volume_ori = float(record['volume_ori'])
+
+                A_augmented.append([nada_ori, intonasi_ori, volume_ori])
+
+            A_augmented = np.array(A_augmented, dtype=float)
+
+            print("Matriks A_augmented sebelum eliminasi Gauss:")
+            print(A_augmented)
+
+            # Langkah eliminasi Gauss
+            n = len(A_augmented)
+            m = len(A_augmented[0])
+
+            for i in range(min(n, m)):
+                # Pilih baris pivoting
+                pivot_row = A_augmented[i]
+                
+                # Cek apakah elemen diagonal nol
+                if pivot_row[i] == 0:
+                    continue
+                
+                # Normalisasi baris pivoting
+                A_augmented[i] = pivot_row / pivot_row[i]
+                
+                # Eliminasi
+                for j in range(i + 1, n):
+                    factor = A_augmented[j, i]
+                    A_augmented[j] -= factor * A_augmented[i]
+
+            print("Matriks A_augmented setelah eliminasi Gauss:")
+            print(A_augmented)
+
+            # Solusi
+            if n > 0:
+                # Mendapatkan solusi dari hasil eliminasi Gauss
+                w = np.zeros(m)  # Inisialisasi vektor solusi w
+                for i in range(m-1, -1, -1):
+                    w[i] = A_augmented[i, -1] - np.dot(A_augmented[i, i+1:m], w[i+1:m])
+
+                print("Solusi w setelah eliminasi Gauss:")
+                print(w)
+
+                # Nilai w1, w2, w3, dan b didapatkan dari w
+                w1, w2, w3 = w[0], w[1], w[2]
+                b = w[-1]  # Bias diambil dari elemen terakhir vektor w
+
+                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
+            else:
+                return "Terjadi kesalahan saat menyelesaikan persamaan linier."
+        else:
+            return "Data dari database tidak ditemukan."
+    else:
+        return "Terjadi kesalahan. Silakan coba lagi nanti."
+
+
+# Hasil Perhitungan NP Mean
+@app.route('/HasilSingleAudio')
+def hasil_single_audio_page():
+    data = get_data_from_database()
+    if data is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    nada = session.get('nada')
+    intonasi = session.get('intonasi')
+    volume = session.get('volume')
+    file_name = session.get('file_name')
+
+    if nada is not None and intonasi is not None and volume is not None:
+        if len(data) > 0:
+            # Inisialisasi matriks koefisien
+            A_augmented = []
+
+            # Ambil nilai dari database untuk membentuk matriks A dan konversi ke float
+            for record in data:
+                nada_ori = float(record['nada_ori'])
+                intonasi_ori = float(record['intonasi_ori'])
+                volume_ori = float(record['volume_ori'])
+
+                A_augmented.append([nada_ori, intonasi_ori, volume_ori])
+
+            A_augmented = np.array(A_augmented, dtype=float)
+
+            # Langkah eliminasi Gauss
+            n = len(A_augmented)
+            m = len(A_augmented[0])
+
+            for i in range(min(n, m)):
+                # Pilih baris pivoting
+                pivot_row = A_augmented[i]
+                
+                # Cek apakah elemen diagonal nol
+                if pivot_row[i] == 0:
+                    continue
+                
+                # Normalisasi baris pivoting
+                A_augmented[i] = pivot_row / pivot_row[i]
+                
+                # Eliminasi
+                for j in range(i + 1, n):
+                    factor = A_augmented[j, i]
+                    A_augmented[j] -= factor * A_augmented[i]
+
+            # Solusi
+            if n > 0:
+                # Mengambil nilai rata-rata dari setiap kolom
+                w1 = np.mean(A_augmented[:, 0])
+                w2 = np.mean(A_augmented[:, 1])
+                w3 = np.mean(A_augmented[:, 2])
+                
+                # Menghitung nilai B atau Bias
+                b = np.mean(A_augmented[:, -1]) - (w1 * nada_ori + w2 * intonasi_ori + w3 * volume_ori)
+
+                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
+            else:
+                return "Terjadi kesalahan saat menyelesaikan persamaan linier."
+        else:
+            return "Data dari database tidak ditemukan."
+    else:
+        return "Terjadi kesalahan. Silakan coba lagi nanti."
+
+# Gauss Murni
+import numpy as np
+
+# Matriks koefisien
+A = np.array([[15.0, 25.0, 35.0],
+              [30.0, 20.0, 10.0],
+              [25.0, 35.0, 15.0]])
+
+# Vektor hasil
+b_vector = np.array([1.0, 1.0, 1.0])
+
+# Matriks augmented
+A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
+
+# Persamaan 3 Variabel
+print("Persamaan 3 Variabel:")
+for i, row in enumerate(A):
+    equation = f"Persamaan {i+1}: {' + '.join([f'{row[j]}w{j+1}' for j in range(len(row))])} + (b) >_ 1"
+    print(equation)
+
+# Langkah eliminasi Gauss
+for i in range(len(A_augmented)):
+    # Pilih baris pivoting
+    pivot_row = A_augmented[i]
+    
+    # Cek apakah elemen diagonal nol
+    if pivot_row[i] == 0:
+        continue
+    
+    # Normalisasi baris pivoting
+    pivot_row = pivot_row / pivot_row[i]
+    A_augmented[i] = pivot_row
+    
+    # Eliminasi
+    for j in range(i + 1, len(A_augmented)):
+        factor = A_augmented[j, i]
+        A_augmented[j] -= factor * pivot_row
+
+# Solusi
+w1 = A_augmented[0, -2]
+w2 = A_augmented[1, -2]
+w3 = A_augmented[2, -3]
+b = A_augmented[0, -1]
+
+# Cetak Nilai w1-w3 dan b
+print("Nilai w1:", w1)
+print("Nilai w2:", w2)
+print("Nilai w3:", w3)
+print("Nilai b:", b)
+
+# Persamaan hyperplane
+print("Persamaan hyperplane:")
+print(f"{w1}x1 + {w2}x2 + {w3}x3 + {b}")
+
+# Input nilai x1, x2, x3
+x1 = float(input("Masukkan nilai x1: "))
+x2 = float(input("Masukkan nilai x2: "))
+x3 = float(input("Masukkan nilai x3: "))
+
+# Hitung hasil akhir
+hasil = w1*x1 + w2*x2 + w3*x3 + (b)
+print("Hasil akhir:", hasil)
+
+### Gauss Database
+# Hasil Perhitungan
+@app.route('/HasilSingleAudio')
+def hasil_single_audio_page():
+    data = get_data_from_database()
+    if data is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    nada = session.get('nada')
+    intonasi = session.get('intonasi')
+    volume = session.get('volume')
+    file_name = session.get('file_name')
+
+    if nada is not None and intonasi is not None and volume is not None:
+        if len(data) > 0:
+            # Inisialisasi matriks koefisien
+            A_augmented = []
+
+            # Ambil nilai dari database untuk membentuk matriks A dan konversi ke float
+            for record in data:
+                nada_ori = float(record['nada_ori'])
+                intonasi_ori = float(record['intonasi_ori'])
+                volume_ori = float(record['volume_ori'])
+
+                A_augmented.append([nada_ori, intonasi_ori, volume_ori])
+
+            A_augmented = np.array(A_augmented, dtype=float)
+
+            # Langkah eliminasi Gauss
+            n = len(A_augmented)
+            m = len(A_augmented[0])
+
+            for i in range(min(n, m)):
+                # Pilih baris pivoting
+                pivot_row = A_augmented[i]
+                
+                # Cek apakah elemen diagonal nol
+                if pivot_row[i] == 0:
+                    continue
+                
+                # Normalisasi baris pivoting
+                A_augmented[i] = pivot_row / pivot_row[i]
+                
+                # Eliminasi
+                for j in range(i + 1, n):
+                    factor = A_augmented[j, i]
+                    A_augmented[j] -= factor * A_augmented[i]
+
+            # Solusi
+            if n > 0:
+                # Mengambil nilai rata-rata dari setiap kolom
+                w1 = np.mean(A_augmented[:, 0])
+                w2 = np.mean(A_augmented[:, 1])
+                w3 = np.mean(A_augmented[:, 2])
+                
+                # Menghitung nilai B atau Bias
+                b = np.mean(A_augmented[:, -1]) - (w1 * nada_ori + w2 * intonasi_ori + w3 * volume_ori)
+
+                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
+            else:
+                return "Terjadi kesalahan saat menyelesaikan persamaan linier."
+        else:
+            return "Data dari database tidak ditemukan."
+    else:
+        return "Terjadi kesalahan. Silakan coba lagi nanti."
+    
+## Hasil Single Audio
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Hasil Pendeteksian Single Audio</title>
+    <!-- Custom Google font-->
+    <link rel="stylesheet" type=text/css href="{{ url_for('static',filename='bootstrap.min.css') }}">
+    <link href= "{{ url_for('static', filename='images/emotion.png') }}" rel='shortcut icon'>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<body class="d-flex flex-column h-100 bg-light">
+<main class="flex-shrink-0">
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+        <div class="container px-5">
+            <a class="navbar-brand" href="/Beranda"><span class="fw-bolder text-primary">Deteksi Emosi</span></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+                    <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/Beranda">Beranda</a></li>
+                    <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/SingleAudio">Single Audio</a></li>
+                    <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <div class="container py-4">
+        <h3 class="text-center mb-4">Hasil Pendeteksian Emosi (Single Audio)</h3>
+        <div class="audio-player text-center mb-4">
+            <audio controls>
+                <source src="{{ url_for('download_file', filename=file_name) }}" type="audio/mpeg">
+                <source src="{{ url_for('download_file', filename=file_name) }}" type="audio/wav">
+            </audio>
+        </div>
+        <div class="text-center">
+            <p class="fw-bold">Nama Audio : {{ file_name }}</p>
+            <p class="fw-bold">Nada (X1) : {{ nada }}</p>
+            <p class="fw-bold">Intonasi (X2) : {{ intonasi }}</p>
+            <p class="fw-bold">Volume (X3) : {{ volume }}</p>
+        </div>
+        <hr>
+        <div class="text-center">
+            <h4 class="mb-3">Persamaan 3 Variabel:</h4>
+            {% for data_entry in data %}
+            <div class="mb-4">
+                <p class="fw-bold">Data {{ loop.index }}</p>
+                <p class="mb-0">Persamaan : {{ data_entry['nada_ori'] }}<strong>W1</strong> + {{ data_entry['intonasi_ori'] }}<strong>W2</strong> + {{ data_entry['volume_ori'] }}<strong>W3</strong> + <strong>B</strong> >_ 1</p>
+            </div>
+            {% endfor %}
+        </div>
+        <div class="text-center">
+            <h4 class="mb-3">Nilai W1, W2, W3 dan Bias :</h4>
+            <p class="mb-1">Nilai <strong>W1</strong>: {{ w1 }}</p>
+            <p class="mb-1">Nilai <strong>W2</strong>: {{ w2 }}</p>
+            <p class="mb-1">Nilai <strong>W3</strong>: {{ w3 }}</p>
+            <p class="mb-1">Nilai <strong>B</strong>: {{ b }}</p>
+        </div>
+        <hr>
+        <div class="text-center">
+            <h4 class="mb-3">Persamaan Hyperplane:</h4>
+            <p class="mb-0">{{ w1 }}<strong>X1</strong> + {{ w2 }}<strong>X2</strong> + {{ w3 }}<strong>X3</strong> + {{ b }}</p>
+        </div>
+        <br>
+    </div>
+</main>
+<footer
+      class="bg-white py-4 mt-auto"
+      style=" bottom: 0; width: 100%"
+    >
+      <div class="container px-5">
+        <div class="row align-items-center justify-content-center">
+          <div class="col-auto">
+            <div class="small m-0 px-10" style="font-size: 18px">
+              <strong>Copyright &copy; JC Developer</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+</footer>
+<!-- Bootstrap core JS-->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Core theme JS-->
+<script src="js/scripts.js"></script>
+</body>
+</html>
