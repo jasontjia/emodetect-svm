@@ -92,6 +92,10 @@ def single_audio():
 def data_latih():
     return render_template('data_latih.html')
 
+@app.route('/HasilDataLatih')
+def hasil_data_latih():
+    return render_template('hasil_datalatih.html')
+
 @app.route('/HasilSingleAudio', methods=['POST'])
 def hasil_single_audio():  
     if 'file' not in request.files:
