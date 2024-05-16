@@ -11,6 +11,8 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     n_train = len(X_train)
     n_test = len(X_test)
     predictions = np.zeros(n_test)
+    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+    kernel_values = []  # List untuk menyimpan nilai kernel RBF
     
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
@@ -19,20 +21,25 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji
             kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Simpan nilai kernel ke dalam list
+            kernel_values.append((X_train[j], X_test[i], kernel_value))
             # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
             prediction += y_train[j] * kernel_value
+        # Simpan nilai prediksi sebelum mengambil tanda
+        prediction_values[i] = prediction
         # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
         predictions[i] = np.sign(prediction)
-    return predictions.astype(int)
+    
+    return predictions.astype(int), prediction_values, kernel_values
 
 # Contoh data fitur untuk dua kelas: marah dan tidak marah
-angry_samples = np.array([[100, 0.5, 0.8],
-                           [110, 0.6, 0.7],
-                           [90, 0.4, 0.9]])
+angry_samples = np.array([[12,  4, 23],
+                          [19,  7, 29],
+                          [15, 25, 11]])
 
-non_angry_samples = np.array([[120, 0.7, 0.6],
-                               [115, 0.8, 0.5],
-                               [125, 0.9, 0.4]])
+non_angry_samples = np.array( [[ 8,  1, 18], 
+                               [28, 14, 26],
+                               [17, 22, 3]])
 
 # Gabungkan kedua set data untuk pelatihan
 X_train = np.vstack((angry_samples, non_angry_samples))
@@ -42,16 +49,24 @@ y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
 # Prediksi kelas untuk contoh baru
 # Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([105, 0.55, 0.75])
+new_sample = np.array([25, 11, 2])
 
 # Parameter gamma untuk kernel RBF
 gamma = 0.01
 
 # Lakukan prediksi menggunakan SVM dengan kernel RBF
-predicted_class = predict_svm_rbf(X_train, y_train, [new_sample], gamma)[0]
+predicted_class, prediction_value, kernel_values = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
 
 # Print hasil prediksi
-if predicted_class == -1:
+if predicted_class[0] == -1:
     print("Prediksi: Marah")
 else:
     print("Prediksi: Tidak Marah")
+
+# Print nilai prediksi
+print(f"Nilai prediksi: {prediction_value[0]}")
+
+# Print nilai kernel RBF
+print("\nNilai kernel RBF:")
+for (x_train, x_test, kernel_value) in kernel_values:
+    print(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")

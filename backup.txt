@@ -726,3 +726,266 @@ def hasil_single_audio_page():
 <script src="js/scripts.js"></script>
 </body>
 </html>
+
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
+
+# Fungsi kernel RBF
+def rbf_kernel(x, x_prime, gamma):
+    distance_squared = np.sum((x - x_prime)**2)
+    kernel_value = np.exp(-gamma * distance_squared)
+    return kernel_value
+
+# Prediksi kelas menggunakan SVM dengan kernel RBF
+def predict_svm_rbf(X_train, y_train, X_test, gamma):
+    n_train = len(X_train)
+    n_test = len(X_test)
+    predictions = np.zeros(n_test)
+    
+    # Looping untuk setiap sampel di data uji
+    for i in range(n_test):
+        prediction = 0
+        # Hitung nilai prediksi untuk sampel uji saat ini
+        for j in range(n_train):
+            # Hitung nilai kernel antara sampel latih dan sampel uji
+            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            prediction += y_train[j] * kernel_value
+        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+        predictions[i] = np.sign(prediction)
+    return predictions.astype(int)
+
+# Contoh data fitur untuk dua kelas: marah dan tidak marah
+angry_samples = np.array([[1365.41162109375, 3.6374735832214355, 0.007138704881072044],
+                           [1727.074951171875, 3.3955962657928467, 0.0030823834240436554],
+                           [1773.4058837890625, 3.4316916465759277, 0.003404540941119194]])
+
+non_angry_samples = np.array([[1365.41162109375, 3.6374735832214355, 0.007138704881072044],
+                           [1727.074951171875, 3.3955962657928467, 0.0030823834240436554],
+                           [1773.4058837890625, 3.4316916465759277, 0.003404540941119194]])
+
+# Gabungkan kedua set data untuk pelatihan
+X_train = np.vstack((angry_samples, non_angry_samples))
+
+# Label untuk kedua kelas
+y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+# Prediksi kelas untuk contoh baru
+# Misalnya, kita memiliki contoh baru sebagai berikut:
+new_sample = np.array([1139.115966796875, 4.283384323120117, 0.00764648150652647])
+
+# Parameter gamma untuk kernel RBF
+gamma = 0.01
+
+# Lakukan prediksi menggunakan SVM dengan kernel RBF
+predicted_class = predict_svm_rbf(X_train, y_train, [new_sample], gamma)[0]
+
+# Print hasil prediksi
+if predicted_class == -1:
+    print("Prediksi: Marah")
+else:
+    print("Prediksi: Tidak Marah")
+
+# Visualisasi hasil
+def plot_decision_boundary(X, y, gamma, resolution=0.02):
+    # Setup marker generator and color map
+    markers = ('s', 'x')
+    colors = ('red', 'blue')
+    cmap = ListedColormap(colors[:len(np.unique(y))])
+    
+    # Plot the decision surface
+    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
+    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
+                           np.arange(x2_min, x2_max, resolution))
+    grid_points = np.c_[xx1.ravel(), xx2.ravel(), np.full(xx1.ravel().shape, np.mean(X[:, 2]))]  # Using mean of third feature
+    
+    Z = predict_svm_rbf(X, y, grid_points, gamma)
+    Z = Z.reshape(xx1.shape)
+    
+    plt.contourf(xx1, xx2, Z, alpha=0.3, cmap=cmap)
+    plt.xlim(xx1.min(), xx1.max())
+    plt.ylim(xx2.min(), xx2.max())
+
+    # Plot class samples
+    for idx, cl in enumerate(np.unique(y)):
+        plt.scatter(x=X[y == cl, 0], y=X[y == cl, 1],
+                    alpha=0.8, c=colors[idx],
+                    marker=markers[idx], label='Marah' if cl == -1 else 'Tidak Marah')
+
+# Plotting the decision boundary
+plot_decision_boundary(X_train, y_train, gamma)
+plt.scatter(new_sample[0], new_sample[1], c='green', marker='o', label='Sample Baru')
+plt.xlabel('Feature 1')
+plt.ylabel('Feature 2')
+plt.legend(loc='upper left')
+plt.show()
+
+
+<h2>Data Detail:</h2>
+pre>{{ data }}</pre>
+
+import numpy as np
+
+# Fungsi kernel RBF
+def rbf_kernel(x, x_prime, gamma):
+    distance_squared = np.sum((x - x_prime)**2)
+    kernel_value = np.exp(-gamma * distance_squared)
+    return kernel_value
+
+# Prediksi kelas menggunakan SVM dengan kernel RBF
+def predict_svm_rbf(X_train, y_train, X_test, gamma):
+    n_train = len(X_train)
+    n_test = len(X_test)
+    predictions = np.zeros(n_test)
+    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+    kernel_values = []  # List untuk menyimpan nilai kernel RBF
+    
+    # Looping untuk setiap sampel di data uji
+    for i in range(n_test):
+        prediction = 0
+        # Hitung nilai prediksi untuk sampel uji saat ini
+        for j in range(n_train):
+            # Hitung nilai kernel antara sampel latih dan sampel uji
+            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Simpan nilai kernel ke dalam list
+            kernel_values.append((X_train[j], X_test[i], kernel_value))
+            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            prediction += y_train[j] * kernel_value
+        # Simpan nilai prediksi sebelum mengambil tanda
+        prediction_values[i] = prediction
+        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+        predictions[i] = np.sign(prediction)
+    
+    return predictions.astype(int), prediction_values, kernel_values
+
+# Contoh data fitur untuk dua kelas: marah dan tidak marah
+angry_samples = np.array([[12,  4, 23],
+                          [19,  7, 29],
+                          [15, 25, 11]])
+
+non_angry_samples = np.array( [[ 8,  1, 18], 
+                               [28, 14, 26],
+                               [17, 22, 3]])
+
+# Gabungkan kedua set data untuk pelatihan
+X_train = np.vstack((angry_samples, non_angry_samples))
+
+# Label untuk kedua kelas
+y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+# Prediksi kelas untuk contoh baru
+# Misalnya, kita memiliki contoh baru sebagai berikut:
+new_sample = np.array([25, 11, 2])
+
+# Parameter gamma untuk kernel RBF
+gamma = 0.01
+
+# Lakukan prediksi menggunakan SVM dengan kernel RBF
+predicted_class, prediction_value, kernel_values = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+
+# Print hasil prediksi
+if predicted_class[0] == -1:
+    print("Prediksi: Marah")
+else:
+    print("Prediksi: Tidak Marah")
+
+# Print nilai prediksi
+print(f"Nilai prediksi: {prediction_value[0]}")
+
+# Print nilai kernel RBF
+print("\nNilai kernel RBF:")
+for (x_train, x_test, kernel_value) in kernel_values:
+    print(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
+
+# Perhitungan Algoritma SVM RBF
+def rbf_kernel(x, x_prime, gamma):
+    distance_squared = np.sum((x - x_prime)**2)
+    kernel_value = np.exp(-gamma * distance_squared)
+    return kernel_value
+
+# Prediksi kelas menggunakan SVM dengan kernel RBF
+def predict_svm_rbf(X_train, y_train, X_test, gamma):
+    n_train = len(X_train)
+    n_test = len(X_test)
+    predictions = np.zeros(n_test)
+    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+    kernel_values = []  # List untuk menyimpan nilai kernel RBF
+    calculation_steps = []  # List untuk menyimpan langkah-langkah perhitungan
+    
+    # Looping untuk setiap sampel di data uji
+    for i in range(n_test):
+        prediction = 0
+        calculation_step = f"Perhitungan prediksi untuk sampel uji {i+1}:\n"
+        # Hitung nilai prediksi untuk sampel uji saat ini
+        for j in range(n_train):
+            # Hitung nilai kernel antara sampel latih dan sampel uji
+            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Simpan nilai kernel ke dalam list
+            kernel_values.append((X_train[j], X_test[i], kernel_value))
+            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            prediction += y_train[j] * kernel_value
+            calculation_step += f"  Kontribusi dari sampel latih {j+1}: y_train={y_train[j]}, kernel={kernel_value}, kontribusi={y_train[j] * kernel_value}\n"
+        # Simpan nilai prediksi sebelum mengambil tanda
+        prediction_values[i] = prediction
+        # Simpan langkah perhitungan
+        calculation_step += f"  Nilai prediksi sebelum tanda: {prediction}\n"
+        calculation_steps.append(calculation_step)
+        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+        predictions[i] = np.sign(prediction)
+    
+    return predictions.astype(int), prediction_values, kernel_values, calculation_steps
+
+@app.route('/HasilSingleAudio')
+def hasil_single_audio_page():
+    data = get_data_from_database()
+    if data is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    nada = session.get('nada')
+    intonasi = session.get('intonasi')
+    volume = session.get('volume')
+    file_name = session.get('file_name')
+
+    if nada is not None and intonasi is not None and volume is not None:
+        nada = float(nada)
+        intonasi = float(intonasi)
+        volume = float(volume)
+
+        angry_samples = np.array([
+            [entry['nada_ori'], entry['intonasi_ori'], entry['volume_ori']]
+            for entry in data if entry['label_manual'] == 'Marah'
+        ], dtype=float)
+
+        non_angry_samples = np.array([
+            [entry['nada_ori'], entry['intonasi_ori'], entry['volume_ori']]
+            for entry in data if entry['label_manual'] == 'Tidak Marah'
+        ], dtype=float)
+        
+        X_train = np.vstack((angry_samples, non_angry_samples))
+        y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+        new_sample = np.array([nada, intonasi, volume], dtype=float)
+        gamma = 0.01
+
+        # Lakukan prediksi menggunakan SVM dengan kernel RBF
+        predicted_class, prediction_value, kernel_values, calculation_steps = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+
+        if predicted_class == -1:
+            prediction_result = "Marah"
+        else:
+            prediction_result = "Tidak Marah"
+
+        kernel_values_display = []  # List untuk menyimpan nilai kernel RBF
+
+        # Loop untuk menambahkan nilai kernel RBF ke dalam list kernel_values_display
+        for (x_train, x_test, kernel_value) in kernel_values:
+            kernel_values_display.append(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
+
+        # Simpan nilai prediksi 
+        prediction_value_display = prediction_value[0]
+        
+        return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data, prediction_result=prediction_result, kernel_values_display=kernel_values_display, prediction_value_display=prediction_value_display, calculation_steps=calculation_steps)
+    
+    return "Data tidak lengkap untuk melakukan prediksi."

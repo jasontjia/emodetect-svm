@@ -48,12 +48,30 @@
             <p class="fw-bold">Volume : {{ volume }}</p>
         </div>
         <hr>
+        <div class="text-center">
+          <h4>Nilai Kernel RBF Antara Data Latih dan Data Uji:</h4>
+          {% for kernel_value in kernel_values_display %}
+            <li>{{ kernel_value }}</li>
+          {% endfor %}
+        </div>
         <br>
+        <div class="text-center">
+          <h4>Langkah Perhitungan Nilai Klasifikasi:</h4>
+          <pre>
+            <strong>
+              {% for step in calculation_steps %}
+              {{ step }}
+            {% endfor %}
+            </strong>
+          </pre>
+        </div>
+        <p class="fw-bold text-center">Nilai Klasisfikasi: {{ prediction_value_display }}</p>
+        <h4 class="text-center">Hasil Emosi : {{ prediction_result }}</h4>
     </div>
 </main>
 <footer
       class="bg-white py-4 mt-auto"
-      style=" position: fixed; bottom: 0; width: 100% "
+      style=" bottom: 0; width: 100% "
     >
       <div class="container px-5">
         <div class="row align-items-center justify-content-center">

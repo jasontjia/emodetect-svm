@@ -28,7 +28,7 @@ def get_data_from_database():
 
         cursor = connection.cursor(dictionary=True)
 
-        cursor.execute("SELECT nada_ori, intonasi_ori, volume_ori FROM audio_data")
+        cursor.execute("SELECT nada_ori, intonasi_ori, volume_ori, label_manual FROM audio_data")
 
         data = cursor.fetchall()
 
@@ -88,6 +88,10 @@ def beranda():
 def single_audio():
     return render_template('single_audio.html')
 
+@app.route('/DataLatih')
+def data_latih():
+    return render_template('data_latih.html')
+
 @app.route('/HasilSingleAudio', methods=['POST'])
 def hasil_single_audio():  
     if 'file' not in request.files:
@@ -145,7 +149,44 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Hasil Perhitungan
+# Perhitungan Algoritma SVM RBF
+def rbf_kernel(x, x_prime, gamma):
+    distance_squared = np.sum((x - x_prime)**2)
+    kernel_value = np.exp(-gamma * distance_squared)
+    return kernel_value
+
+# Prediksi kelas menggunakan SVM dengan kernel RBF
+def predict_svm_rbf(X_train, y_train, X_test, gamma):
+    n_train = len(X_train)
+    n_test = len(X_test)
+    predictions = np.zeros(n_test)
+    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+    kernel_values = []  # List untuk menyimpan nilai kernel RBF
+    calculation_steps = []  # List untuk menyimpan langkah-langkah perhitungan
+    
+    # Looping untuk setiap sampel di data uji
+    for i in range(n_test):
+        prediction = 0
+        calculation_step = f"Perhitungan prediksi untuk sampel uji {i+1}:\n"
+        # Hitung nilai prediksi untuk sampel uji saat ini
+        for j in range(n_train):
+            # Hitung nilai kernel antara sampel latih dan sampel uji
+            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Simpan nilai kernel ke dalam list
+            kernel_values.append((X_train[j], X_test[i], kernel_value))
+            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            prediction += y_train[j] * kernel_value
+            calculation_step += f"  Kontribusi dari sampel latih {j+1}: y_train={y_train[j]}, kernel={kernel_value}, kontribusi={y_train[j] * kernel_value}\n"
+        # Simpan nilai prediksi sebelum mengambil tanda
+        prediction_values[i] = prediction
+        # Simpan langkah perhitungan
+        calculation_step += f"  Nilai prediksi sebelum tanda: {prediction}\n"
+        calculation_steps.append(calculation_step)
+        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+        predictions[i] = np.sign(prediction)
+    
+    return predictions.astype(int), prediction_values, kernel_values, calculation_steps
+
 @app.route('/HasilSingleAudio')
 def hasil_single_audio_page():
     data = get_data_from_database()
@@ -158,9 +199,47 @@ def hasil_single_audio_page():
     file_name = session.get('file_name')
 
     if nada is not None and intonasi is not None and volume is not None:
+        nada = float(nada)
+        intonasi = float(intonasi)
+        volume = float(volume)
 
-                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data)
-     
+        angry_samples = np.array([
+            [entry['nada_ori'], entry['intonasi_ori'], entry['volume_ori']]
+            for entry in data if entry['label_manual'] == 'Marah'
+        ], dtype=float)
+
+        non_angry_samples = np.array([
+            [entry['nada_ori'], entry['intonasi_ori'], entry['volume_ori']]
+            for entry in data if entry['label_manual'] == 'Tidak Marah'
+        ], dtype=float)
+        
+        X_train = np.vstack((angry_samples, non_angry_samples))
+        y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+        new_sample = np.array([nada, intonasi, volume], dtype=float)
+        gamma = 0.01
+
+        # Lakukan prediksi menggunakan SVM dengan kernel RBF
+        predicted_class, prediction_value, kernel_values, calculation_steps = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+
+        if predicted_class == -1:
+            prediction_result = "Marah"
+        else:
+            prediction_result = "Tidak Marah"
+
+        kernel_values_display = []  # List untuk menyimpan nilai kernel RBF
+
+        # Loop untuk menambahkan nilai kernel RBF ke dalam list kernel_values_display
+        for (x_train, x_test, kernel_value) in kernel_values:
+            kernel_values_display.append(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
+
+        # Simpan nilai prediksi 
+        prediction_value_display = prediction_value[0]
+        
+        return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data, prediction_result=prediction_result, kernel_values_display=kernel_values_display, prediction_value_display=prediction_value_display, calculation_steps=calculation_steps)
+    
+    return "Data tidak lengkap untuk melakukan prediksi."
+
 # Form Unggah
 @app.route('/FormUnggah', methods=['GET', 'POST'])
 def form_unggah():  
