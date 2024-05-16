@@ -33,13 +33,13 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     return predictions.astype(int), prediction_values, kernel_values
 
 # Contoh data fitur untuk dua kelas: marah dan tidak marah
-angry_samples = np.array([[12,  4, 23],
-                          [19,  7, 29],
-                          [15, 25, 11]])
+angry_samples = np.array([[0, -1, 1],
+                          [0, -1, 1],
+                          [0, 1, 0]])
 
-non_angry_samples = np.array( [[ 8,  1, 18], 
-                               [28, 14, 26],
-                               [17, 22, 3]])
+non_angry_samples = np.array( [[-1, -1, 0], 
+                               [1, 0, 1],
+                               [0, 1, -1]])
 
 # Gabungkan kedua set data untuk pelatihan
 X_train = np.vstack((angry_samples, non_angry_samples))
@@ -49,7 +49,7 @@ y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
 # Prediksi kelas untuk contoh baru
 # Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([25, 11, 2])
+new_sample = np.array([1, 0, -1])
 
 # Parameter gamma untuk kernel RBF
 gamma = 0.01
@@ -63,10 +63,10 @@ if predicted_class[0] == -1:
 else:
     print("Prediksi: Tidak Marah")
 
-# Print nilai prediksi
-print(f"Nilai prediksi: {prediction_value[0]}")
-
 # Print nilai kernel RBF
 print("\nNilai kernel RBF:")
 for (x_train, x_test, kernel_value) in kernel_values:
     print(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
+
+# Print nilai prediksi
+print(f"Nilai prediksi: {prediction_value[0]}")
