@@ -1,637 +1,309 @@
-import librosa
-import numpy as np
-
-# Load audio file
-y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
-
-# Calculate pitch (nada)
-pitch, _ = librosa.piptrack(y=y, sr=sr)
-pitch = np.mean(pitch)
-
-# Calculate intonation (intonasi)
-# Anda harus mengganti ini dengan cara yang sesuai untuk menghitung intonasi
-intonasi = 0  # Misalnya, di sini kami menganggap intonasi sebagai nilai tetap 0
-
-# Calculate volume (volume)
-volume = librosa.feature.rms(y=y)
-volume = np.mean(volume)
-
-# Map values to specific ranges
-def map_value(x, x_min, x_max, y_min, y_max):
-    return (x - x_min) / (x_max - x_min) * (y_max - y_min) + y_min
-
-nada = map_value(pitch, 0, 1000, 0, 30)  # Rentang nilai Nada: 0-30
-intonasi = map_value(intonasi, 0, 1, 0, 30)  # Rentang nilai Intonasi: 0-30
-volume = map_value(volume, 0, 1, 0, 30)  # Rentang nilai Volume: 0-30
-
-# Function to map range to category
-def map_nada_category(x):
-    if x < 11:
-        return "Rendah"
-    elif 11 <= x <= 20:
-        return "Sedang"
-    else:
-        return "Tinggi"
-
-def map_intonasi_category(x):
-    if x < 11:
-        return "Turun"
-    elif 11 <= x <= 20:
-        return "Datar"
-    else:
-        return "Naik"
-
-def map_volume_category(x):
-    if x < 11:
-        return "Pelan"
-    elif 11 <= x <= 20:
-        return "Sedang"
-    else:
-        return "Keras"
-
-# Print results with integer ranges and categories
-print("Nada =", map_nada_category(nada), "=", int(nada))
-print("Intonasi =", map_intonasi_category(intonasi), "=", int(intonasi))
-print("Volume =", map_volume_category(volume), "=", int(volume))
-
-####################################
-import librosa
-import numpy as np
-
-# Memuat file audio
-y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
-
-# Menghitung nilai nada dari sinyal audio
-pitch, _ = librosa.core.piptrack(y=y, sr=sr)
-
-# Menghitung nilai median nada dari semua frame
-pitch_values = pitch[pitch > 0]
-median_pitch = np.median(pitch_values)
-
-# Menghitung perbedaan nada antar frame untuk mendapatkan nilai intonasi
-pitch_diff = np.diff(pitch_values)
-intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
-
-# Menghitung nilai RMS dari sinyal audio (Volume)
-rms = np.sqrt(np.mean(y**2))
-
-# Inisialisasi bobot dan bias secara acak
-w1 = np.random.rand()
-w2 = np.random.rand()
-w3 = np.random.rand()
-b = np.random.rand()
-
-# Data latih Anda (contoh sederhana, Anda akan memiliki data yang lebih banyak)
-# X_train berisi fitur-fitur (X1, X2, X3), y_train berisi label (1 untuk audio yang diminati, -1 untuk yang tidak)
-X_train = np.array([[median_pitch, intonation, rms]])
-y_train = np.array([1])  # Misalnya, Anda mempertimbangkan audio ini sebagai contoh audio yang Anda minati
-
-# Metode SGD untuk memperbarui bobot dan bias
-learning_rate = 0.01
-epochs = 100
-
-for epoch in range(epochs):
-    for i, x in enumerate(X_train):
-        # Menghitung nilai prediksi dengan formula SVM linear
-        pred = w1 * x[0] + w2 * x[1] + w3 * x[2] + b
-        
-        # Memperbarui bobot dan bias berdasarkan gradien
-        if y_train[i] * pred < 1:  # Hanya perbarui jika prediksi tidak sesuai dengan label
-            w1 += learning_rate * (y_train[i] * x[0] - 2 * w1)
-            w2 += learning_rate * (y_train[i] * x[1] - 2 * w2)
-            w3 += learning_rate * (y_train[i] * x[2] - 2 * w3)
-            b += learning_rate * y_train[i]
-
-# Setelah proses pelatihan selesai, Anda memiliki bobot (w1, w2, w3) dan bias (b)
-print("Bobot (w1, w2, w3):", w1, w2, w3)
-print("Bias (b):", b)
-
-
-###########################################
-import librosa
-import numpy as np
-
-# Memuat file audio
-y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
-
-# Menghitung nilai nada dari sinyal audio
-pitch, _ = librosa.core.piptrack(y=y, sr=sr)
-
-# Menghitung nilai median nada dari semua frame
-pitch_values = pitch[pitch > 0]
-median_pitch = np.median(pitch_values)
-
-# Menghitung perbedaan nada antar frame untuk mendapatkan nilai intonasi
-pitch_diff = np.diff(pitch_values)
-intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
-
-# Menghitung nilai RMS dari sinyal audio (Volume)
-rms = np.sqrt(np.mean(y**2))
-
-# Inisialisasi bobot secara acak
-w1 = np.random.rand()
-w2 = np.random.rand()
-w3 = np.random.rand()
-
-# Inisialisasi bias secara acak
-b = np.random.rand()
-
-# Nilai fitur X1, X2, dan X3
-X1 = median_pitch
-X2 = intonation
-X3 = rms
-
-# Rumus SVM Linear
-f_x = w1 * X1 + w2 * X2 + w3 * X3 + b
-
-# Cetak nilai nada, intonasi, dan volume dari file audio
-print(' (X1) Nada:', median_pitch)
-print(' (X2) Intonasi:', intonation)
-print(' (X3) Volume:', rms)
-
-# Cetak nilai bobot (w1, w2, w3) dan nilai bias (b)
-print("Bobot (w1, w2, w3):", w1, w2, w3)
-print("Bias (b):", b)
-
-
-############################################
-import librosa
-import numpy as np
-
-# Memuat file audio
-y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/Twinkle Twinkle Little Star  Nursery Rhymes for Kids  Super Simple Songs.mp3')
-
-# Menghitung nilai nada dari sinyal audio
-pitch, _ = librosa.core.piptrack(y=y, sr=sr)
-
-# Menghitung nilai median nada dari semua frame
-pitch_values = pitch[pitch > 0]
-median_pitch = np.median(pitch_values)
-
-# Menghitung perbedaan nada antar frame untuk mendapatkan nilai intonasi
-pitch_diff = np.diff(pitch_values)
-intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
-
-# Menghitung nilai RMS dari sinyal audio (Volume)
-rms = np.sqrt(np.mean(y**2))
-
-# Inisialisasi bobot secara acak
-w1 = np.random.rand()
-w2 = np.random.rand()
-w3 = np.random.rand()
-
-# Inisialisasi bias secara acak
-b = np.random.rand()
-
-# Contoh label
-y_label = 1
-
-# Metode SGD untuk memperbarui bobot dan bias
-learning_rate = 0.01
-epochs = 100
-
-for epoch in range(epochs):
-    # Menghitung nilai prediksi dengan formula SVM linear
-    pred = w1 * median_pitch + w2 * intonation + w3 * rms + b
-    
-    # Memperbarui bobot dan bias berdasarkan gradien
-    if y_label * pred < 1:  # Hanya perbarui jika prediksi tidak sesuai dengan label
-        w1 += learning_rate * (y_label * median_pitch - 2 * w1)
-        w2 += learning_rate * (y_label * intonation - 2 * w2)
-        w3 += learning_rate * (y_label * rms - 2 * w3)
-        b += learning_rate * y_label
-
-# Cetak nilai nada, intonasi, dan volume dari file audio
-print(' (X1) Nada:', median_pitch)
-print(' (X2) Intonasi:', intonation)
-print(' (X3) Volume:', rms)
-
-# Setelah proses pelatihan selesai, Anda memiliki bobot (w1, w2, w3) dan bias (b)
-print("Bobot (w1, w2, w3):", w1, w2, w3)
-print("Bias (b):", b)
-
-############################ Perhitungan hyperplane (gauss) tanpa W
-import numpy as np
-
-# Sistem persamaan linear
-# Persamaan 1: w1*15 + w2*25 + w3*35 + b >= 1
-# Persamaan 2: w1*30 + w2*20 + w3*10 + b >= 1
-# Persamaan 3: w1*25 + w2*35 + w3*15 + b >= 1
-
-# Matriks koefisien
-A = np.array([[15.0, 25.0, 35.0],
-              [30.0, 20.0, 10.0],
-              [25.0, 35.0, 15.0]])
-
-# Vektor hasil
-b_vector = np.array([1.0, 1.0, 1.0])
-
-# Matriks augmented
-A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
-
-# Langkah eliminasi Gauss
-for i in range(len(A_augmented)):
-    # Pilih baris pivoting
-    pivot_row = A_augmented[i]
-    
-    # Cek apakah elemen diagonal nol
-    if pivot_row[i] == 0:
-        continue
-    
-    # Normalisasi baris pivoting
-    pivot_row = pivot_row / pivot_row[i]
-    A_augmented[i] = pivot_row
-    
-    # Eliminasi
-    for j in range(i + 1, len(A_augmented)):
-        factor = A_augmented[j, i]
-        A_augmented[j] -= factor * pivot_row
-
-# Solusi
-w1 = A_augmented[0, -2]
-w2 = A_augmented[1, -2]
-w3 = A_augmented[2, -3]
-b = A_augmented[0, -1]
-
-print("Nilai w1:", w1)
-print("Nilai w2:", w2)
-print("Nilai w3:", w3)
-print("Nilai b:", b)
-
-# Persamaan hyperplane
-print("Persamaan hyperplane:")
-print(f"{w1}x1 + {w2}x2 + {w3}x3 + {b}")
-
-# Input nilai x1, x2, x3
-x1 = float(input("Masukkan nilai x1: "))
-x2 = float(input("Masukkan nilai x2: "))
-x3 = float(input("Masukkan nilai x3: "))
-
-# Hitung hasil akhir
-hasil = x1 + x2 + x3 + (b)
-print("Hasil akhir:", hasil)
-
-###################### Persamaan hyperplane (Gauss) gunakan W  
-import numpy as np
-
-# Sistem persamaan linear
-# Persamaan 1: w1*15 + w2*25 + w3*35 + b >= 1
-# Persamaan 2: w1*30 + w2*20 + w3*10 + b >= 1
-# Persamaan 3: w1*25 + w2*35 + w3*15 + b >= 1
-
-# Matriks koefisien
-A = np.array([[15.0, 25.0, 35.0],
-              [30.0, 20.0, 10.0],
-              [25.0, 35.0, 15.0]])
-
-# Vektor hasil
-b_vector = np.array([1.0, 1.0, 1.0])
-
-# Matriks augmented
-A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
-
-# Langkah eliminasi Gauss
-for i in range(len(A_augmented)):
-    # Pilih baris pivoting
-    pivot_row = A_augmented[i]
-    
-    # Cek apakah elemen diagonal nol
-    if pivot_row[i] == 0:
-        continue
-    
-    # Normalisasi baris pivoting
-    pivot_row = pivot_row / pivot_row[i]
-    A_augmented[i] = pivot_row
-    
-    # Eliminasi
-    for j in range(i + 1, len(A_augmented)):
-        factor = A_augmented[j, i]
-        A_augmented[j] -= factor * pivot_row
-
-# Solusi
-w1 = A_augmented[0, -2]
-w2 = A_augmented[1, -2]
-w3 = A_augmented[2, -3]
-b = A_augmented[0, -1]
-
-print("Nilai w1:", w1)
-print("Nilai w2:", w2)
-print("Nilai w3:", w3)
-print("Nilai b:", b)
-
-# Persamaan hyperplane
-print("Persamaan hyperplane:")
-print(f"{w1}x1 + {w2}x2 + {w3}x3 + {b}")
-
-# Input nilai x1, x2, x3
-x1 = float(input("Masukkan nilai x1: "))
-x2 = float(input("Masukkan nilai x2: "))
-x3 = float(input("Masukkan nilai x3: "))
-
-# Hitung hasil akhir
-hasil = w1*x1 + w2*x2 + w3*x3 + (b)
-print("Hasil akhir:", hasil)
-
-Rencana Anda terdengar bagus! Berikut langkah-langkah umum yang dapat Anda ambil untuk menerapkan rencana tersebut:
-
-Mengambil Nilai dari Audio: Gunakan koding Python yang telah Anda buat sebelumnya untuk mengekstraksi nada, intonasi, dan volume dari audio. Pastikan untuk mengonversi nilai-nilai ini ke dalam rentang yang sesuai dengan model klasifikasi yang Anda gunakan di koding perhitungan Gauss.
-Menyimpan Nilai ke Database: Setelah Anda mendapatkan nilai nada, intonasi, dan volume, masukkan nilai-nilai ini ke dalam database. Pastikan struktur database Anda sesuai dengan kebutuhan, termasuk kolom untuk nilai x1, x2, dan x3.
-Mengambil Nilai dari Database: Saat Anda ingin menjalankan koding perhitungan Gauss, ambil nilai x1, x2, dan x3 dari database sesuai dengan data yang telah Anda simpan.
-Menjalankan Koding Perhitungan Gauss: Gunakan nilai x1, x2, dan x3 yang telah Anda ambil dari database sebagai input untuk koding perhitungan Gauss Anda.
-Melakukan Klasifikasi: Setelah Anda mendapatkan hasil perhitungan, Anda bisa menentukan klasifikasi (misalnya, -1 untuk marah dan +1 untuk tidak marah) berdasarkan hasil tersebut.
-Pastikan untuk menguji setiap langkah dari proses ini untuk memastikan semuanya berjalan sesuai harapan. Juga, pastikan untuk mempertimbangkan keamanan data saat bekerja dengan database, terutama saat menyimpan data sensitif seperti hasil pengolahan audio. Jika Anda memiliki pertanyaan lebih lanjut atau membutuhkan bantuan lebih lanjut, jangan ragu untuk bertanya!
-
-          <!-- Nilai w1-w3 dan b -->
-          <div style="text-align: center;">
-              <h4>Nilai w1, w2, w3 dan bias :</h4>
-              <p>Nilai w1: {{ w1 }}</p>
-              <p>Nilai w2: {{ w2 }}</p>
-              <p>Nilai w3: {{ w3 }}</p>
-              <p>Nilai b: {{ b }}</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Data Latih</title>
+    <!-- Custom Google font-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='bootstrap.min.css') }}">
+    <link href="{{ url_for('static', filename='images/emotion.png') }}" rel='shortcut icon'>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<body class="d-flex flex-column h-100 bg-light">
+<main class="flex-shrink-0">
+    <!-- Navigation-->
+    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+        <div class="container px-5">
+            <a class="navbar-brand" href="/Beranda"><span class="fw-bolder text-primary">Deteksi Emosi</span></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+                    <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/Beranda">Beranda</a></li>
+                    <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/SingleAudio">Single Audio</a></li>
+                    <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    <br>
+    <h3 style="text-align: center;">Form Data Training</h3>
+
+    <!-- Form for data validation -->
+    <div class="container mt-4">
+        <form id="dataValidationForm">
+            <div class="mb-3">
+                <label for="totalDataset" class="form-label">Total Dataset</label>
+                <input type="text" class="form-control" id="totalDataset" placeholder="Masukan Total Datasets" required>
+            </div>
+            <div class="mb-3">
+                <label for="ratio" class="form-label">Rasio Data Latih : Data Uji</label>
+                <select class="form-select" id="ratio">
+                    <option selected>Pilih Rasio</option>
+                    <option value="0.7">60% Latih - 40% Uji</option>
+                    <option value="0.7">70% Latih - 30% Uji</option>
+                    <option value="0.8">80% Latih - 20% Uji</option>
+                    <option value="0.9">90% Latih - 10% Uji</option>
+                </select>
+            </div>
+            <div class="mb-3">
+                <label for="numTrainingData" class="form-label">Jumlah Data Latih</label>
+                <input type="text" class="form-control" id="numTrainingData" disabled>
+            </div>
+            <div class="mb-3">
+                <label for="numTestingData" class="form-label">Jumlah Data Uji</label>
+                <input type="text" class="form-control" id="numTestingData" disabled>
+            </div>
+            <button type="submit" class="btn btn-primary">Tampilkan Data Latih</button>
+        </form>
+    </div>
+</main>
+<!-- Footer-->
+<footer
+  class="bg-white py-4 mt-auto"
+  style="position: fixed; bottom: 0; width: 100%"
+>
+  <div class="container px-5">
+    <div class="row align-items-center justify-content-center">
+      <div class="col-auto">
+        <div class="small m-0 px-10" style="font-size: 18px;">
+          <strong>Copyright &copy; JC Developer</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core theme JS-->
+    <script src="js/scripts.js"></script>
+    <script>
+        document.getElementById('ratio').addEventListener('change', function() {
+            var totalDataset = parseInt(document.getElementById('totalDataset').value);
+            var ratio = parseFloat(this.value);
+            var numTrainingData = Math.ceil(totalDataset * ratio);
+            var numTestingData = totalDataset - numTrainingData;
+            document.getElementById('numTrainingData').value = numTrainingData;
+            document.getElementById('numTestingData').value = numTestingData;
+        });
+    </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content />
+    <meta name="author" content />
+    <title>Form Unggah (admin)</title>
+    <!-- Custom Google font-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='bootstrap.min.css') }}" />
+    <link href="{{ url_for('static', filename='images/emotion.png') }}" rel="shortcut icon" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<body class="d-flex flex-column">
+<main class="flex-shrink-0">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+        <div class="container px-5">
+            <a class="navbar-brand" href="/Beranda">
+                <span class="fw-bolder text-primary">Deteksi Emosi</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+        </div>
+    </nav>
+    <!-- Page content-->
+    <section class="py-5">
+        <div class="container px-5">
+            <div class="bg-light rounded-4 py-5 px-4 px-md-5">
+                <div class="text-center mb-5">
+                    <h1 class="fw-bolder">Single Audio (admin)</h1>
+                    <p class="lead fw-normal text-muted mb-0">Silahkan unggah audio pada tombol di bawah ini</p>
+                    <br />
+                    <p class="lead fw-normal text-danger mb-0">*MP3 dan WAV*</p>
+                </div>
+                <div class="row gx-5 justify-content-center">
+                    <div class="col-lg-8 col-xl-6">
+                        <form id="uploadForm" action="/FormUnggah" method="post" enctype="multipart/form-data">
+                            <!-- Field Nama File -->
+                            <div class="mb-3" id="fileNameField"></div>
+                            <!-- Submit Button-->
+                            <div class="d-grid">
+                                <label for="fileInput" class="btn btn-primary btn-lg">
+                                    Unggah<input type="file" id="fileInput" name="file" accept=".mp3, .wav" class="form-control d-none" />
+                                </label>
+                            </div>
+                            <br />
+                            <!-- Informasi File -->
+                            <div id="fileInfo" class="mb-3"></div>
+                            <!-- Pesan Kesalahan -->
+                            <div class="text-danger" id="errorMessage"></div>
+                            <!-- Tombol Simpan (baru) -->
+                            <div class="d-grid">
+                                <button class="btn btn-success btn-lg" id="saveButton" type="submit">Simpan</button>
+                            </div>
+                        </form>
+                        <!-- Menampilkan nilai x1 (nada), x2 (intonasi), dan x3 (volume) -->
+                        <div class="mt-3" id="resultSection" style="display: none;">
+                            <p>Nama Audio : {{ file_name }}</p>
+                            <p>Nada : <span id="nada"></span></p>
+                            <p>Intonasi : <span id="intonasi"></span></p>
+                            <p>Volume : <span id="volume"></span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+<!-- Footer-->
+<footer class="bg-white py-4 mt-auto" style="position: fixed; bottom: 0; width: 100%">
+    <div class="container px-5">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-auto">
+                <div class="small m-0 px-10" style="font-size: 18px">
+                    <strong>Copyright &copy; JC Developer</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<!-- Bootstrap core JS-->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Core theme JS-->
+<script src="js/scripts.js"></script>
+<script>
+    // Ambil elemen yang diperlukan dari HTML
+    const fileInput = document.getElementById("fileInput");
+    const fileInfo = document.getElementById("fileInfo");
+    const fileNameField = document.getElementById("fileNameField");
+    const errorMessage = document.getElementById("errorMessage");
+    const saveButton = document.getElementById("saveButton");
+    const resultSection = document.getElementById("resultSection");
+    const nadaElement = document.getElementById("nada");
+    const intonasiElement = document.getElementById("intonasi");
+    const volumeElement = document.getElementById("volume");
+
+    // Event listener untuk perubahan pada input file
+    fileInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (file) {
+            const fileName = file.name;
+            const fileSize = (file.size / 1024 / 1024).toFixed(2); // Mengkonversi ukuran file ke MB dengan dua desimal
+            const fileType = file.type;
+
+            // Validasi jenis file dan ukuran
+            if (
+                (fileType === "audio/mp3" || fileType === "audio/wav") &&
+                file.size <= 3 * 1024 * 1024
+            ) {
+                fileNameField.innerHTML = `<p>Nama File: ${fileName} <button type="button" class="btn-close" aria-label="Close" id="clearFile"></button></p>`;
+                fileInfo.innerHTML = `<p>Ukuran: ${fileSize} MB</p>`;
+                errorMessage.textContent = ""; // Menghapus pesan kesalahan jika ada
+            } else {
+                fileNameField.innerHTML = "";
+                fileInfo.innerHTML = "";
+                errorMessage.textContent =
+                    "File harus berformat MP3 atau WAV dan ukurannya tidak boleh melebihi 3MB.";
+            }
+        }
+    });
+
+    // Event listener untuk tombol X (Batal)
+    fileNameField.addEventListener("click", function (event) {
+        if (event.target && event.target.id === "clearFile") {
+            fileInput.value = null; // Menghapus nilai file yang dipilih
+            fileNameField.innerHTML = ""; // Menghapus nama file yang ditampilkan
+            fileInfo.innerHTML = ""; // Menghapus informasi file yang ditampilkan
+            errorMessage.textContent = ""; // Menghapus pesan kesalahan
+        }
+    });
+
+    // Event listener untuk tombol Simpan
+    saveButton.addEventListener("click", function () {
+        // Tampilkan nilai x1 (nada), x2 (intonasi), dan x3 (volume)
+        resultSection.style.display = "block";
+        nadaElement.textContent = "{{ nada }}";
+        intonasiElement.textContent = "{{ intonasi }}";
+        volumeElement.textContent = "{{ volume }}";
+    });
+</script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Hasil Pendeteksian Data Training</title>
+        <!-- Custom Google font-->
+        <link rel="stylesheet" type=text/css href="{{ url_for('static',filename='bootstrap.min.css') }}">
+        <link href= "{{ url_for('static', filename='images/emotion.png') }}" rel='shortcut icon'>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+        <!-- Bootstrap icons-->
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+        <!-- Core theme CSS (includes Bootstrap)-->
+        <link href="css/styles.css" rel="stylesheet" />
+    </head>
+    <body class="d-flex flex-column h-100 bg-light">
+        <main class="flex-shrink-0">
+            <!-- Navigation-->
+            <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+                <div class="container px-5">
+                    <a class="navbar-brand" href="/Beranda"><span class="fw-bolder text-primary">Deteksi Emosi</span></a>
+                    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+                            <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/Beranda">Beranda</a></li>
+                            <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/SingleAudio">Single Audio</a></li>
+                            <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a></li>
+                    </div>
+                </div>
+            </nav>
+            <br>
+            <h3 style="text-align: center;">Hasil Pendeteksian Emosi (Data Training)</h3>
+        </main>
+        <!-- Footer-->
+        <footer
+      class="bg-white py-4 mt-auto"
+      style="position: fixed; bottom: 0; width: 100%"
+    >
+      <div class="container px-5">
+        <div class="row align-items-center justify-content-center">
+          <div class="col-auto">
+            <div class="small m-0 px-10" style="font-size: 18px;">
+              <strong>Copyright &copy; JC Developer</strong>
+            </div>
           </div>
-      
-          <!-- Persamaan Hyperplane -->
-          <div style="text-align: center;">
-              <h4>Persamaan Hyperplane:</h4>
-              <p>{{ w1 }}x1 + {{ w2 }}x2 + {{ w3 }}x3 + {{ b }}</p>
-          </div>
+        </div>
+      </div>
+        <!-- Bootstrap core JS-->
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+        <!-- Core theme JS-->
+        <script src="js/scripts.js"></script>
+    </body>
+</html>
 
-            <div style="text-align: center;">
-              <h4>Persamaan 3 Variabel:</h4>
-              <p>Persamaan 1: {{ nada }}w1 + {{ intonasi }}w2 + {{ volume }}w3 + b >_ 1</p>
-          </div>
-
-# Hasil Perhitungan Eliminasi Gauss Biasa
-@app.route('/HasilSingleAudio')
-def hasil_single_audio_page():
-    data = get_data_from_database()
-    if data is None:
-        return "Terjadi kesalahan saat mengambil data dari database."
-
-    nada = session.get('nada')
-    intonasi = session.get('intonasi')
-    volume = session.get('volume')
-    file_name = session.get('file_name')
-
-    if nada is not None and intonasi is not None and volume is not None:
-        if len(data) > 0:
-            # Inisialisasi matriks koefisien
-            A_augmented = []
-
-            # Ambil nilai dari database untuk membentuk matriks A dan konversi ke float
-            for record in data:
-                nada_ori = float(record['nada_ori'])
-                intonasi_ori = float(record['intonasi_ori'])
-                volume_ori = float(record['volume_ori'])
-
-                A_augmented.append([nada_ori, intonasi_ori, volume_ori])
-
-            A_augmented = np.array(A_augmented, dtype=float)
-
-            print("Matriks A_augmented sebelum eliminasi Gauss:")
-            print(A_augmented)
-
-            # Langkah eliminasi Gauss
-            n = len(A_augmented)
-            m = len(A_augmented[0])
-
-            for i in range(min(n, m)):
-                # Pilih baris pivoting
-                pivot_row = A_augmented[i]
-                
-                # Cek apakah elemen diagonal nol
-                if pivot_row[i] == 0:
-                    continue
-                
-                # Normalisasi baris pivoting
-                A_augmented[i] = pivot_row / pivot_row[i]
-                
-                # Eliminasi
-                for j in range(i + 1, n):
-                    factor = A_augmented[j, i]
-                    A_augmented[j] -= factor * A_augmented[i]
-
-            print("Matriks A_augmented setelah eliminasi Gauss:")
-            print(A_augmented)
-
-            # Solusi
-            if n > 0:
-                # Mendapatkan solusi dari hasil eliminasi Gauss
-                w = np.zeros(m)  # Inisialisasi vektor solusi w
-                for i in range(m-1, -1, -1):
-                    w[i] = A_augmented[i, -1] - np.dot(A_augmented[i, i+1:m], w[i+1:m])
-
-                print("Solusi w setelah eliminasi Gauss:")
-                print(w)
-
-                # Nilai w1, w2, w3, dan b didapatkan dari w
-                w1, w2, w3 = w[0], w[1], w[2]
-                b = w[-1]  # Bias diambil dari elemen terakhir vektor w
-
-                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
-            else:
-                return "Terjadi kesalahan saat menyelesaikan persamaan linier."
-        else:
-            return "Data dari database tidak ditemukan."
-    else:
-        return "Terjadi kesalahan. Silakan coba lagi nanti."
-
-
-# Hasil Perhitungan NP Mean
-@app.route('/HasilSingleAudio')
-def hasil_single_audio_page():
-    data = get_data_from_database()
-    if data is None:
-        return "Terjadi kesalahan saat mengambil data dari database."
-
-    nada = session.get('nada')
-    intonasi = session.get('intonasi')
-    volume = session.get('volume')
-    file_name = session.get('file_name')
-
-    if nada is not None and intonasi is not None and volume is not None:
-        if len(data) > 0:
-            # Inisialisasi matriks koefisien
-            A_augmented = []
-
-            # Ambil nilai dari database untuk membentuk matriks A dan konversi ke float
-            for record in data:
-                nada_ori = float(record['nada_ori'])
-                intonasi_ori = float(record['intonasi_ori'])
-                volume_ori = float(record['volume_ori'])
-
-                A_augmented.append([nada_ori, intonasi_ori, volume_ori])
-
-            A_augmented = np.array(A_augmented, dtype=float)
-
-            # Langkah eliminasi Gauss
-            n = len(A_augmented)
-            m = len(A_augmented[0])
-
-            for i in range(min(n, m)):
-                # Pilih baris pivoting
-                pivot_row = A_augmented[i]
-                
-                # Cek apakah elemen diagonal nol
-                if pivot_row[i] == 0:
-                    continue
-                
-                # Normalisasi baris pivoting
-                A_augmented[i] = pivot_row / pivot_row[i]
-                
-                # Eliminasi
-                for j in range(i + 1, n):
-                    factor = A_augmented[j, i]
-                    A_augmented[j] -= factor * A_augmented[i]
-
-            # Solusi
-            if n > 0:
-                # Mengambil nilai rata-rata dari setiap kolom
-                w1 = np.mean(A_augmented[:, 0])
-                w2 = np.mean(A_augmented[:, 1])
-                w3 = np.mean(A_augmented[:, 2])
-                
-                # Menghitung nilai B atau Bias
-                b = np.mean(A_augmented[:, -1]) - (w1 * nada_ori + w2 * intonasi_ori + w3 * volume_ori)
-
-                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
-            else:
-                return "Terjadi kesalahan saat menyelesaikan persamaan linier."
-        else:
-            return "Data dari database tidak ditemukan."
-    else:
-        return "Terjadi kesalahan. Silakan coba lagi nanti."
-
-# Gauss Murni
-import numpy as np
-
-# Matriks koefisien
-A = np.array([[15.0, 25.0, 35.0],
-              [30.0, 20.0, 10.0],
-              [25.0, 35.0, 15.0]])
-
-# Vektor hasil
-b_vector = np.array([1.0, 1.0, 1.0])
-
-# Matriks augmented
-A_augmented = np.hstack((A, b_vector.reshape(-1, 1)))
-
-# Persamaan 3 Variabel
-print("Persamaan 3 Variabel:")
-for i, row in enumerate(A):
-    equation = f"Persamaan {i+1}: {' + '.join([f'{row[j]}w{j+1}' for j in range(len(row))])} + (b) >_ 1"
-    print(equation)
-
-# Langkah eliminasi Gauss
-for i in range(len(A_augmented)):
-    # Pilih baris pivoting
-    pivot_row = A_augmented[i]
-    
-    # Cek apakah elemen diagonal nol
-    if pivot_row[i] == 0:
-        continue
-    
-    # Normalisasi baris pivoting
-    pivot_row = pivot_row / pivot_row[i]
-    A_augmented[i] = pivot_row
-    
-    # Eliminasi
-    for j in range(i + 1, len(A_augmented)):
-        factor = A_augmented[j, i]
-        A_augmented[j] -= factor * pivot_row
-
-# Solusi
-w1 = A_augmented[0, -2]
-w2 = A_augmented[1, -2]
-w3 = A_augmented[2, -3]
-b = A_augmented[0, -1]
-
-# Cetak Nilai w1-w3 dan b
-print("Nilai w1:", w1)
-print("Nilai w2:", w2)
-print("Nilai w3:", w3)
-print("Nilai b:", b)
-
-# Persamaan hyperplane
-print("Persamaan hyperplane:")
-print(f"{w1}x1 + {w2}x2 + {w3}x3 + {b}")
-
-# Input nilai x1, x2, x3
-x1 = float(input("Masukkan nilai x1: "))
-x2 = float(input("Masukkan nilai x2: "))
-x3 = float(input("Masukkan nilai x3: "))
-
-# Hitung hasil akhir
-hasil = w1*x1 + w2*x2 + w3*x3 + (b)
-print("Hasil akhir:", hasil)
-
-### Gauss Database
-# Hasil Perhitungan
-@app.route('/HasilSingleAudio')
-def hasil_single_audio_page():
-    data = get_data_from_database()
-    if data is None:
-        return "Terjadi kesalahan saat mengambil data dari database."
-
-    nada = session.get('nada')
-    intonasi = session.get('intonasi')
-    volume = session.get('volume')
-    file_name = session.get('file_name')
-
-    if nada is not None and intonasi is not None and volume is not None:
-        if len(data) > 0:
-            # Inisialisasi matriks koefisien
-            A_augmented = []
-
-            # Ambil nilai dari database untuk membentuk matriks A dan konversi ke float
-            for record in data:
-                nada_ori = float(record['nada_ori'])
-                intonasi_ori = float(record['intonasi_ori'])
-                volume_ori = float(record['volume_ori'])
-
-                A_augmented.append([nada_ori, intonasi_ori, volume_ori])
-
-            A_augmented = np.array(A_augmented, dtype=float)
-
-            # Langkah eliminasi Gauss
-            n = len(A_augmented)
-            m = len(A_augmented[0])
-
-            for i in range(min(n, m)):
-                # Pilih baris pivoting
-                pivot_row = A_augmented[i]
-                
-                # Cek apakah elemen diagonal nol
-                if pivot_row[i] == 0:
-                    continue
-                
-                # Normalisasi baris pivoting
-                A_augmented[i] = pivot_row / pivot_row[i]
-                
-                # Eliminasi
-                for j in range(i + 1, n):
-                    factor = A_augmented[j, i]
-                    A_augmented[j] -= factor * A_augmented[i]
-
-            # Solusi
-            if n > 0:
-                # Mengambil nilai rata-rata dari setiap kolom
-                w1 = np.mean(A_augmented[:, 0])
-                w2 = np.mean(A_augmented[:, 1])
-                w3 = np.mean(A_augmented[:, 2])
-                
-                # Menghitung nilai B atau Bias
-                b = np.mean(A_augmented[:, -1]) - (w1 * nada_ori + w2 * intonasi_ori + w3 * volume_ori)
-
-                return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, w1=w1, w2=w2, w3=w3, b=b, data=data)
-            else:
-                return "Terjadi kesalahan saat menyelesaikan persamaan linier."
-        else:
-            return "Data dari database tidak ditemukan."
-    else:
-        return "Terjadi kesalahan. Silakan coba lagi nanti."
-    
-## Hasil Single Audio
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -677,38 +349,35 @@ def hasil_single_audio_page():
         </div>
         <div class="text-center">
             <p class="fw-bold">Nama Audio : {{ file_name }}</p>
-            <p class="fw-bold">Nada (X1) : {{ nada }}</p>
-            <p class="fw-bold">Intonasi (X2) : {{ intonasi }}</p>
-            <p class="fw-bold">Volume (X3) : {{ volume }}</p>
+            <p class="fw-bold">Nada : {{ nada }}</p>
+            <p class="fw-bold">Intonasi : {{ intonasi }}</p>
+            <p class="fw-bold">Volume : {{ volume }}</p>
         </div>
         <hr>
         <div class="text-center">
-            <h4 class="mb-3">Persamaan 3 Variabel:</h4>
-            {% for data_entry in data %}
-            <div class="mb-4">
-                <p class="fw-bold">Data {{ loop.index }}</p>
-                <p class="mb-0">Persamaan : {{ data_entry['nada_ori'] }}<strong>W1</strong> + {{ data_entry['intonasi_ori'] }}<strong>W2</strong> + {{ data_entry['volume_ori'] }}<strong>W3</strong> + <strong>B</strong> >_ 1</p>
-            </div>
-            {% endfor %}
-        </div>
-        <div class="text-center">
-            <h4 class="mb-3">Nilai W1, W2, W3 dan Bias :</h4>
-            <p class="mb-1">Nilai <strong>W1</strong>: {{ w1 }}</p>
-            <p class="mb-1">Nilai <strong>W2</strong>: {{ w2 }}</p>
-            <p class="mb-1">Nilai <strong>W3</strong>: {{ w3 }}</p>
-            <p class="mb-1">Nilai <strong>B</strong>: {{ b }}</p>
-        </div>
-        <hr>
-        <div class="text-center">
-            <h4 class="mb-3">Persamaan Hyperplane:</h4>
-            <p class="mb-0">{{ w1 }}<strong>X1</strong> + {{ w2 }}<strong>X2</strong> + {{ w3 }}<strong>X3</strong> + {{ b }}</p>
+          <h4>Nilai Kernel RBF Antara Data Latih dan Data Uji:</h4>
+          {% for kernel_value in kernel_values_display %}
+            <li>{{ kernel_value }}</li>
+          {% endfor %}
         </div>
         <br>
+        <div class="text-center">
+          <h4>Langkah Perhitungan Nilai Klasifikasi:</h4>
+          <pre>
+            <strong>
+              {% for step in calculation_steps %}
+              {{ step }}
+            {% endfor %}
+            </strong>
+          </pre>
+        </div>
+        <p class="fw-bold text-center">Nilai Klasisfikasi: {{ prediction_value_display }}</p>
+        <h4 class="text-center">Hasil Emosi : {{ prediction_result }}</h4>
     </div>
 </main>
 <footer
       class="bg-white py-4 mt-auto"
-      style=" bottom: 0; width: 100%"
+      style=" bottom: 0; width: 100% "
     >
       <div class="container px-5">
         <div class="row align-items-center justify-content-center">
@@ -727,177 +396,528 @@ def hasil_single_audio_page():
 </body>
 </html>
 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
+    <title>Beranda</title>
+    <!-- Custom Google font-->
+    <link href= "{{ url_for('static', filename='images/emotion.png') }}" rel='shortcut icon'>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" type=text/css href="{{ url_for('static',filename='bootstrap.min.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+    <!-- Bootstrap icons-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+</head>
+<body class="d-flex flex-column h-100">
+    <main class="flex-shrink-0">
+        <!-- Navigation-->
+        <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+            <div class="container px-5">
+                <a class="navbar-brand" href="/Beranda"><span class="fw-bolder text-primary">Deteksi Emosi</span></a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+                        <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/Beranda">Beranda</a></li>
+                        <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/SingleAudio">Single Audio</a></li>
+                        <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <!-- Header-->
+        <header class="py-5">
+            <div class="container px-5 pb-5">
+                <div class="row gx-5 align-items-center">
+                    <div class="col-xxl-5">
+                        <!-- Header text content-->
+                        <div class="text-center text-xxl-start">
+                            <div class="badge bg-gradient-primary-to-secondary text-white mb-4"><div class="text-uppercase">Machine Learning &middot;</div></div>
+                            <div class="fs-3 fw-light text-muted"><strong>Emotion Detection</strong></div>
+                            <h1 class="display-3 fw-bolder mb-5"><span class="text-gradient d-inline">Selamat Datang di Web ini</span></h1>
+                            <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-xxl-start mb-3">
+                                <a class="btn btn-primary btn-lg px-5 py-3 me-sm-3 fs-6 fw-bolder" href="/SingleAudio">Single Audio</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xxl-7">
+                        <!-- Move the image into this div -->
+                        <div class="d-flex justify-content-center mt-5 mt-xxl-0">
+                            <div class="profile bg-gradient-primary-to-secondary">
+                                <!-- Adjust the styles here -->
+                                <img class="profile-img" src="{{ url_for('static', filename='images/emotion.png') }}" alt="Emotion" style="max-width: 500px; height: auto; border-radius: 50%; float: right;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <!-- Footer-->
+        <footer class="bg-white py-4 mt-auto" style="position: fixed; bottom: 0; width: 100%">
+            <div class="container px-5">
+                <div class="row align-items-center justify-content-center">
+                    <div class="col-auto">
+                        <div class="small m-0 px-10" style="font-size: 18px;">
+                            <strong>Copyright &copy; JC Developer</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </main>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core theme JS-->
+    <script src="js/scripts.js"></script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="description" content />
+    <meta name="author" content />
+    <title>Unggah File Single Audio</title>
+    <!-- Custom Google font-->
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="{{ url_for('static',filename='bootstrap.min.css') }}"
+    />
+    <link
+      href="{{ url_for('static', filename='images/emotion.png') }}"
+      rel="shortcut icon"
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"
+      rel="stylesheet"
+    />
+    <!-- Bootstrap icons-->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="css/styles.css" rel="stylesheet" />
+  </head>
+  <body class="d-flex flex-column">
+    <main class="flex-shrink-0">
+      <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+        <div class="container px-5">
+          <a class="navbar-brand" href="/Beranda"
+            ><span class="fw-bolder text-primary">Deteksi Emosi</span></a
+          >
+          <button
+            class="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+              <li class="nav-item">
+                <a
+                  class="nav-link text-primary"
+                  style="font-size: 18px"
+                  href="/Beranda"
+                  >Beranda</a
+                >
+              </li>
+              <li class="nav-item">
+                <a
+                  class="nav-link text-primary"
+                  style="font-size: 18px"
+                  href="/SingleAudio"
+                  >Single Audio</a
+                >
+              </li>
+              <li class="nav-item">
+                <a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </nav>
+      <!-- Page content-->
+      <section class="py-5">
+        <div class="container px-5">
+          <div class="bg-light rounded-4 py-5 px-4 px-md-5">
+            <div class="text-center mb-5">
+              <h1 class="fw-bolder">Single Audio</h1>
+              <p class="lead fw-normal text-muted mb-0">
+                Silahkan unggah audio pada tombol dibawah ini
+              </p>
+              <br />
+              <p class="lead fw-normal text-danger mb-0">*MP3 dan WAV*</p>
+            </div>
+            <div class="row gx-5 justify-content-center">
+              <div class="col-lg-8 col-xl-6">
+                <form id="uploadForm" action="/HasilSingleAudio" method="post" enctype="multipart/form-data">
+                  <!-- Field Nama File -->
+                  <div class="mb-3" id="fileNameField"></div>
+                  <!-- Submit Button-->
+                  <div class="d-grid">
+                    <label for="fileInput" class="btn btn-primary btn-lg">
+                      Unggah<input
+                        type="file"
+                        id="fileInput"
+                        name="file"
+                        accept=".mp3, .wav"
+                        class="form-control d-none"
+                      />
+                    </label>
+                  </div>
+                  <br />
+                  <!-- Informasi File -->
+                  <div id="fileInfo" class="mb-3"></div>
+                  <!-- Pesan Kesalahan -->
+                  <div class="text-danger" id="errorMessage"></div>
+                  <!-- Tombol Deteksi (awalnya disembunyikan) -->
+                  <div class="d-grid" id="detectButtonContainer">
+                    <button
+                      class="btn btn-danger btn-lg"
+                      id="detectButton"
+                      type="submit"
+                      style="display: none"
+                    >
+                      Deteksi
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+    <!-- Footer-->
+    <footer
+      class="bg-white py-4 mt-auto"
+      style="position: fixed; bottom: 0; width: 100%"
+    >
+      <div class="container px-5">
+        <div class="row align-items-center justify-content-center">
+          <div class="col-auto">
+            <div class="small m-0 px-10" style="font-size: 18px">
+              <strong>Copyright &copy; JC Developer</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </footer>
+    <!-- Bootstrap core JS-->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Core theme JS-->
+    <script src="js/scripts.js"></script>
+    <script>
+      // Ambil elemen yang diperlukan dari HTML
+      const fileInput = document.getElementById("fileInput");
+      const fileInfo = document.getElementById("fileInfo");
+      const fileNameField = document.getElementById("fileNameField");
+      const detectButton = document.getElementById("detectButton");
+      const errorMessage = document.getElementById("errorMessage");
+    
+      // Event listener untuk perubahan pada input file
+      fileInput.addEventListener("change", function () {
+        const file = this.files[0];
+        if (file) {
+          const fileName = file.name;
+          const fileSize = (file.size / 1024 / 1024).toFixed(2); // Mengkonversi ukuran file ke MB dengan dua desimal
+          const fileType = file.type;
+    
+          // Validasi jenis file dan ukuran
+          if (
+             
+            file.size <= 4 * 1024 * 1024
+          ) {
+            fileNameField.innerHTML = `<p>Nama File: ${fileName} <button type="button" class="btn-close" aria-label="Close" id="clearFile"></button></p>`;
+            fileInfo.innerHTML = `<p>Ukuran: ${fileSize} MB</p>`;
+            detectButton.style.display = "block"; // Tampilkan tombol deteksi
+            errorMessage.textContent = ""; // Menghapus pesan kesalahan jika ada
+          } else {
+            fileNameField.innerHTML = "";
+            fileInfo.innerHTML = "";
+            detectButton.style.display = "none"; // Sembunyikan tombol deteksi
+            errorMessage.textContent =
+              "File harus berformat MP3 atau WAV dan ukurannya tidak boleh melebihi 3MB.";
+          }
+        }
+      });
+    
+      // Event listener untuk tombol X (Batal)
+      fileNameField.addEventListener("click", function (event) {
+        if (event.target && event.target.id === "clearFile") {
+          fileInput.value = null; // Menghapus nilai file yang dipilih
+          fileNameField.innerHTML = ""; // Menghapus nama file yang ditampilkan
+          fileInfo.innerHTML = ""; // Menghapus informasi file yang ditampilkan
+          detectButton.style.display = "none"; // Sembunyikan tombol deteksi
+          errorMessage.textContent = ""; // Menghapus pesan kesalahan
+        }
+      });
+    </script>    
+  </body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasil Unggah CSV</title>
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.11.5/css/dataTables.bootstrap5.min.css">
+    <link rel="stylesheet" type=text/css href="{{ url_for('static',filename='bootstrap.min.css') }}">
+    <link href= "{{ url_for('static', filename='images/emotion.png') }}" rel='shortcut icon'>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js" crossorigin="anonymous"></script>
+</head>
+<body class="d-flex flex-column h-100 bg-light">
+<main class="flex-shrink-0">
+  <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+    <div class="container px-5">
+        <a class="navbar-brand" href="/Beranda"><span class="fw-bolder text-primary">Deteksi Emosi</span></a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation"><span class="navbar-toggler-icon"></span></button>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+                <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/Beranda">Beranda</a></li>
+                <li class="nav-item"><a class="nav-link text-primary" style="font-size: 18px;" href="/SingleAudio">Single Audio</a></li>
+            </ul>
+        </div>
+    </div>
+</nav>
+    <div class="container mt-4">
+        <div class="card">
+            <div class="card-header">
+                <i class="fas fa-file me-1"></i>
+                <strong>Tabel Data </strong> 
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped" id="audioTable">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>Nama Audio</th>
+                                <th>Nada Ori</th>
+                                <th>Intonasi Ori</th>
+                                <th>Volume Ori</th>
+                                <th>Label Manual</th>
+                                <th>Label Otomatis</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in data %}
+                            <tr>
+                                <td>{{ row['nama_audio'] }}</td>
+                                <td>{{ row['nada_ori'] }}</td>
+                                <td>{{ row['intonasi_ori'] }}</td>
+                                <td>{{ row['volume_ori'] }}</td>
+                                <td>{{ row['label_manual'] }}</td>
+                                <td>{{ row['label_otomatis'] }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+<!-- Footer-->
+<footer class="bg-white py-4 mt-auto" style="position: fixed; bottom: 0; width: 100%">
+    <div class="container px-5">
+        <div class="row align-items-center justify-content-center">
+            <div class="col-auto">
+                <div class="small m-0 px-10" style="font-size: 18px;">
+                    <strong>Copyright &copy; JC Developer</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+<!-- Bootstrap core JS-->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/2.11.6/umd/popper.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/js/bootstrap.min.js"></script>
+<!-- DataTables JS -->
+<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.11.5/js/dataTables.bootstrap5.min.js"></script>
+<script>
+    $(document).ready(function() {
+        $('#audioTable').DataTable();
+    });
+</script>
+</body>
+</html>
+
+from flask import Flask, render_template, redirect, request, send_from_directory, session
+import mysql.connector
+import librosa
 import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
+import os
 
-# Fungsi kernel RBF
-def rbf_kernel(x, x_prime, gamma):
-    distance_squared = np.sum((x - x_prime)**2)
-    kernel_value = np.exp(-gamma * distance_squared)
-    return kernel_value
+app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'  # Secret key for session management
 
-# Prediksi kelas menggunakan SVM dengan kernel RBF
-def predict_svm_rbf(X_train, y_train, X_test, gamma):
-    n_train = len(X_train)
-    n_test = len(X_test)
-    predictions = np.zeros(n_test)
-    
-    # Looping untuk setiap sampel di data uji
-    for i in range(n_test):
-        prediction = 0
-        # Hitung nilai prediksi untuk sampel uji saat ini
-        for j in range(n_train):
-            # Hitung nilai kernel antara sampel latih dan sampel uji
-            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
-            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
-            prediction += y_train[j] * kernel_value
-        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
-        predictions[i] = np.sign(prediction)
-    return predictions.astype(int)
+# Konfigurasi koneksi ke database
+db_host = 'localhost'
+db_user = 'root'
+db_password = ''
+db_database = 'audio'
 
-# Contoh data fitur untuk dua kelas: marah dan tidak marah
-angry_samples = np.array([[1365.41162109375, 3.6374735832214355, 0.007138704881072044],
-                           [1727.074951171875, 3.3955962657928467, 0.0030823834240436554],
-                           [1773.4058837890625, 3.4316916465759277, 0.003404540941119194]])
+# Path ke folder audio_ori di luar direktori static
+AUDIO_FOLDER = os.path.join(app.root_path, 'audio_ori')
 
-non_angry_samples = np.array([[1365.41162109375, 3.6374735832214355, 0.007138704881072044],
-                           [1727.074951171875, 3.3955962657928467, 0.0030823834240436554],
-                           [1773.4058837890625, 3.4316916465759277, 0.003404540941119194]])
+# Fungsi untuk mendapatkan data dari database
+def get_data_from_database():
+    try:
+        connection = mysql.connector.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_database
+        )
 
-# Gabungkan kedua set data untuk pelatihan
-X_train = np.vstack((angry_samples, non_angry_samples))
+        cursor = connection.cursor(dictionary=True)
 
-# Label untuk kedua kelas
-y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+        cursor.execute("SELECT nada_ori, intonasi_ori, volume_ori, label_manual FROM audio_data")
 
-# Prediksi kelas untuk contoh baru
-# Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([1139.115966796875, 4.283384323120117, 0.00764648150652647])
+        data = cursor.fetchall()
 
-# Parameter gamma untuk kernel RBF
-gamma = 0.01
+        cursor.close()
+        connection.close()
 
-# Lakukan prediksi menggunakan SVM dengan kernel RBF
-predicted_class = predict_svm_rbf(X_train, y_train, [new_sample], gamma)[0]
+        return data
 
-# Print hasil prediksi
-if predicted_class == -1:
-    print("Prediksi: Marah")
-else:
-    print("Prediksi: Tidak Marah")
+    except Exception as e:
+        print("Error:", e)
+        return None
 
-# Visualisasi hasil
-def plot_decision_boundary(X, y, gamma, resolution=0.02):
-    # Setup marker generator and color map
-    markers = ('s', 'x')
-    colors = ('red', 'blue')
-    cmap = ListedColormap(colors[:len(np.unique(y))])
-    
-    # Plot the decision surface
-    x1_min, x1_max = X[:, 0].min() - 1, X[:, 0].max() + 1
-    x2_min, x2_max = X[:, 1].min() - 1, X[:, 1].max() + 1
-    xx1, xx2 = np.meshgrid(np.arange(x1_min, x1_max, resolution),
-                           np.arange(x2_min, x2_max, resolution))
-    grid_points = np.c_[xx1.ravel(), xx2.ravel(), np.full(xx1.ravel().shape, np.mean(X[:, 2]))]  # Using mean of third feature
-    
-    Z = predict_svm_rbf(X, y, grid_points, gamma)
-    Z = Z.reshape(xx1.shape)
-    
-    plt.contourf(xx1, xx2, Z, alpha=0.3, cmap=cmap)
-    plt.xlim(xx1.min(), xx1.max())
-    plt.ylim(xx2.min(), xx2.max())
+# Fungsi untuk mengekstrak fitur audio
+def extract_audio_features(audio_file):
+    try:
+        # Muat file audio
+        y, sr = librosa.load(audio_file)
 
-    # Plot class samples
-    for idx, cl in enumerate(np.unique(y)):
-        plt.scatter(x=X[y == cl, 0], y=X[y == cl, 1],
-                    alpha=0.8, c=colors[idx],
-                    marker=markers[idx], label='Marah' if cl == -1 else 'Tidak Marah')
+        # Hitung nilai nada dari audio
+        pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+        
+        # Hitung nilai intonasi
+        pitch_values = pitch[pitch > 0]
+        median_pitch = np.median(pitch_values)
+        pitch_diff = np.diff(pitch_values)
+        intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
 
-# Plotting the decision boundary
-plot_decision_boundary(X_train, y_train, gamma)
-plt.scatter(new_sample[0], new_sample[1], c='green', marker='o', label='Sample Baru')
-plt.xlabel('Feature 1')
-plt.ylabel('Feature 2')
-plt.legend(loc='upper left')
-plt.show()
+        # Hitung nilai volume
+        rms = np.sqrt(np.mean(y**2))
 
+        # Konversi tipe data numpy.float32 ke float
+        median_pitch = float(median_pitch)
+        intonation = float(intonation)
+        rms = float(rms)
 
-<h2>Data Detail:</h2>
-pre>{{ data }}</pre>
+        return median_pitch, intonation, rms
 
-import numpy as np
+    except Exception as e:
+        print("Error extracting audio features:", e)
+        return None, None, None
 
-# Fungsi kernel RBF
-def rbf_kernel(x, x_prime, gamma):
-    distance_squared = np.sum((x - x_prime)**2)
-    kernel_value = np.exp(-gamma * distance_squared)
-    return kernel_value
+# Route untuk mengirimkan file audio
+@app.route('/audio/<path:filename>')
+def download_file(filename):
+    return send_from_directory(AUDIO_FOLDER, filename)
 
-# Prediksi kelas menggunakan SVM dengan kernel RBF
-def predict_svm_rbf(X_train, y_train, X_test, gamma):
-    n_train = len(X_train)
-    n_test = len(X_test)
-    predictions = np.zeros(n_test)
-    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
-    kernel_values = []  # List untuk menyimpan nilai kernel RBF
-    
-    # Looping untuk setiap sampel di data uji
-    for i in range(n_test):
-        prediction = 0
-        # Hitung nilai prediksi untuk sampel uji saat ini
-        for j in range(n_train):
-            # Hitung nilai kernel antara sampel latih dan sampel uji
-            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
-            # Simpan nilai kernel ke dalam list
-            kernel_values.append((X_train[j], X_test[i], kernel_value))
-            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
-            prediction += y_train[j] * kernel_value
-        # Simpan nilai prediksi sebelum mengambil tanda
-        prediction_values[i] = prediction
-        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
-        predictions[i] = np.sign(prediction)
-    
-    return predictions.astype(int), prediction_values, kernel_values
+# Route untuk setiap halaman web
+@app.route('/')  
+def index():
+    return redirect('/Beranda')
 
-# Contoh data fitur untuk dua kelas: marah dan tidak marah
-angry_samples = np.array([[12,  4, 23],
-                          [19,  7, 29],
-                          [15, 25, 11]])
+@app.route('/Beranda')
+def beranda():
+    return render_template('index.html')
 
-non_angry_samples = np.array( [[ 8,  1, 18], 
-                               [28, 14, 26],
-                               [17, 22, 3]])
+@app.route('/SingleAudio')
+def single_audio():
+    return render_template('single_audio.html')
 
-# Gabungkan kedua set data untuk pelatihan
-X_train = np.vstack((angry_samples, non_angry_samples))
+@app.route('/DataLatih')
+def data_latih():
+    return render_template('data_latih.html')
 
-# Label untuk kedua kelas
-y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+@app.route('/HasilSingleAudio', methods=['POST'])
+def hasil_single_audio():  
+    if 'file' not in request.files:
+        return redirect('/SingleAudio')
 
-# Prediksi kelas untuk contoh baru
-# Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([25, 11, 2])
+    audio_file = request.files['file']
 
-# Parameter gamma untuk kernel RBF
-gamma = 0.01
+    if audio_file.filename == '':
+        return redirect('/SingleAudio')
 
-# Lakukan prediksi menggunakan SVM dengan kernel RBF
-predicted_class, prediction_value, kernel_values = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+    # Dapatkan nama file audio
+    file_name = audio_file.filename
 
-# Print hasil prediksi
-if predicted_class[0] == -1:
-    print("Prediksi: Marah")
-else:
-    print("Prediksi: Tidak Marah")
+    # Simpan file sementara
+    temp_file_path = 'temp_audio.wav'
+    audio_file.save(temp_file_path)
 
-# Print nilai prediksi
-print(f"Nilai prediksi: {prediction_value[0]}")
+    # Ekstrak fitur audio
+    nada, intonasi, volume = extract_audio_features(temp_file_path)
 
-# Print nilai kernel RBF
-print("\nNilai kernel RBF:")
-for (x_train, x_test, kernel_value) in kernel_values:
-    print(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
+    # Hapus file sementara
+    os.remove(temp_file_path)
+
+    if nada is not None and intonasi is not None and volume is not None:
+        try:
+            connection = mysql.connector.connect(
+                host=db_host,
+                user=db_user,
+                password=db_password,
+                database=db_database
+            )
+
+            cursor = connection.cursor()
+
+            # Masukkan data ke database
+            cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori) VALUES (%s, %s, %s, %s)", (file_name, nada, intonasi, volume))
+            connection.commit()
+
+            # Simpan nilai-nilai dalam session
+            session['nada'] = nada
+            session['intonasi'] = intonasi
+            session['volume'] = volume
+            session['file_name'] = file_name
+
+            cursor.close()
+            connection.close()
+
+            return redirect('/HasilSingleAudio')
+
+        except Exception as e:
+            print("Error inserting data into database:", e)
+            print("Type of feature values:", type(nada), type(intonasi), type(volume))
+            return "Error occurred. Please try again later."
+
+    else:
+        return "Error extracting audio features. Please try again with a different file."
 
 # Perhitungan Algoritma SVM RBF
 def rbf_kernel(x, x_prime, gamma):
@@ -989,3 +1009,171 @@ def hasil_single_audio_page():
         return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data, prediction_result=prediction_result, kernel_values_display=kernel_values_display, prediction_value_display=prediction_value_display, calculation_steps=calculation_steps)
     
     return "Data tidak lengkap untuk melakukan prediksi."
+
+# Form Unggah
+@app.route('/FormUnggah', methods=['GET', 'POST'])
+def form_unggah():  
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect('/FormUnggah')
+
+        audio_file = request.files['file']
+
+        if audio_file.filename == '':
+            return redirect('/FormUnggah')
+
+        # Dapatkan nama file audio
+        file_name = audio_file.filename
+
+        # Simpan file sementara
+        temp_file_path = 'temp_audio.wav'
+        audio_file.save(temp_file_path)
+
+        # Ekstrak fitur audio
+        nada, intonasi, volume = extract_audio_features(temp_file_path)
+
+        # Hapus file sementara
+        os.remove(temp_file_path)
+
+        if nada is not None and intonasi is not None and volume is not None:
+            try:
+                connection = mysql.connector.connect(
+                    host=db_host,
+                    user=db_user,
+                    password=db_password,
+                    database=db_database
+                )
+
+                cursor = connection.cursor()
+
+                # Masukkan data ke database
+                cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori) VALUES (%s, %s, %s, %s)", (file_name, nada, intonasi, volume))
+                connection.commit()
+
+                # Simpan nilai-nilai dalam session
+                session['nada'] = nada
+                session['intonasi'] = intonasi
+                session['volume'] = volume
+                session['file_name'] = file_name
+
+                cursor.close()
+                connection.close()
+
+                return render_template('form-unggah.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
+
+            except Exception as e:
+                print("Error inserting data into database:", e)
+                print("Type of feature values:", type(nada), type(intonasi), type(volume))
+                return "Error occurred. Please try again later."
+
+        else:
+            return "Error extracting audio features. Please try again with a different file."
+
+    elif request.method == 'GET':
+        # Nilai default jika belum ada file audio yang diproses
+        nada = None
+        intonasi = None
+        volume = None
+        return render_template('form-unggah.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)
+
+import librosa
+import numpy as np
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
+
+# Muat file audio
+y, sr = librosa.load('D:/De La Salle/SEM 8/Tugas Akhir/aplikasi_deteksi/aplikasi_deteksi/audio_ori/test6.wav')
+
+# Hitung nilai nada dari audio
+pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+
+# Hitung nilai intonasi
+pitch_values = pitch[pitch > 0]
+median_pitch = np.median(pitch_values)
+pitch_diff = np.diff(pitch_values)
+intonasi = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
+
+# Hitung nilai volume
+rms = np.sqrt(np.mean(y**2))
+
+# Cetak nilai nada, intonasi, dan volume
+print(' (X1) Pitch:', median_pitch)
+print(' (X2) Intonasi:', intonasi)
+print(' (X3) Volume:', rms)
+
+import numpy as np
+
+# Fungsi kernel RBF
+def rbf_kernel(x, x_prime, gamma):
+    distance_squared = np.sum((x - x_prime)**2)
+    kernel_value = np.exp(-gamma * distance_squared)
+    return kernel_value
+
+# Prediksi kelas menggunakan SVM dengan kernel RBF
+def predict_svm_rbf(X_train, y_train, X_test, gamma):
+    n_train = len(X_train)
+    n_test = len(X_test)
+    predictions = np.zeros(n_test)
+    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+    kernel_values = []  # List untuk menyimpan nilai kernel RBF
+    
+    # Looping untuk setiap sampel di data uji
+    for i in range(n_test):
+        prediction = 0
+        # Hitung nilai prediksi untuk sampel uji saat ini
+        for j in range(n_train):
+            # Hitung nilai kernel antara sampel latih dan sampel uji
+            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Simpan nilai kernel ke dalam list
+            kernel_values.append((X_train[j], X_test[i], kernel_value))
+            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            prediction += y_train[j] * kernel_value
+        # Simpan nilai prediksi sebelum mengambil tanda
+        prediction_values[i] = prediction
+        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+        predictions[i] = np.sign(prediction)
+    
+    return predictions.astype(int), prediction_values, kernel_values
+
+# Contoh data fitur untuk dua kelas: marah dan tidak marah
+angry_samples = np.array([[12,  4, 23],
+                          [19,  7, 29],
+                          [15, 25, 11]])
+
+non_angry_samples = np.array( [[ 8,  1, 18], 
+                               [28, 14, 26],
+                               [17, 22, 3]])
+
+# Gabungkan kedua set data untuk pelatihan
+X_train = np.vstack((angry_samples, non_angry_samples))
+
+# Label untuk kedua kelas
+y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+# Prediksi kelas untuk contoh baru
+# Misalnya, kita memiliki contoh baru sebagai berikut:
+new_sample = np.array([25, 11, 2])
+
+# Parameter gamma untuk kernel RBF
+gamma = 0.01
+
+# Lakukan prediksi menggunakan SVM dengan kernel RBF
+predicted_class, prediction_value, kernel_values = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+
+# Print hasil prediksi
+if predicted_class[0] == -1:
+    print("Prediksi: Marah")
+else:
+    print("Prediksi: Tidak Marah")
+
+# Print nilai prediksi
+print(f"Nilai prediksi: {prediction_value[0]}")
+
+# Print nilai kernel RBF
+print("\nNilai kernel RBF:")
+for (x_train, x_test, kernel_value) in kernel_values:
+    print(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
