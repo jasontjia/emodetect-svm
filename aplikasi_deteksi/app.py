@@ -171,7 +171,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan prediksi untuk sampel uji {i+1}:\n"
+        calculation_step = f"Perhitungan untuk data uji {i+1}:\n"
         # Hitung nilai prediksi untuk sampel uji saat ini
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji
@@ -180,11 +180,11 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
             kernel_values.append((X_train[j], X_test[i], kernel_value))
             # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
             prediction += y_train[j] * kernel_value
-            calculation_step += f"  Kontribusi dari sampel latih {j+1}: y_train={y_train[j]}, kernel={kernel_value}, kontribusi={y_train[j] * kernel_value}\n"
+            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value}, kontribusi={y_train[j] * kernel_value}\n"
         # Simpan nilai prediksi sebelum mengambil tanda
         prediction_values[i] = prediction
         # Simpan langkah perhitungan
-        calculation_step += f"  Nilai prediksi sebelum tanda: {prediction}\n"
+        calculation_step += f"  Nilai Klasifikasi : {prediction}\n"
         calculation_steps.append(calculation_step)
         # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
         predictions[i] = np.sign(prediction)

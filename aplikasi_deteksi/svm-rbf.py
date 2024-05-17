@@ -69,4 +69,4 @@ for (x_train, x_test, kernel_value) in kernel_values:
     print(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
 
 # Print nilai prediksi
-print(f"Nilai prediksi: {prediction_value[0]}")
+print(f"Nilai Klasifikasi: {prediction_value[0]}")
