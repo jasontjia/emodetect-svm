@@ -1,21 +1,21 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="description" content="" />
-    <meta name="author" content="" />
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="description" content="">
+    <meta name="author" content="">
     <title>Data Latih</title>
     <!-- Custom Google font-->
-    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='bootstrap.min.css') }}">
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}">
     <link href="{{ url_for('static', filename='images/emotion.png') }}" rel='shortcut icon'>
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet">
     <!-- Bootstrap icons-->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Core theme CSS (includes Bootstrap)-->
-    <link href="css/styles.css" rel="stylesheet" />
+    <link href="css/styles.css" rel="stylesheet">
 </head>
 <body class="d-flex flex-column h-100 bg-light">
 <main class="flex-shrink-0">
@@ -38,16 +38,16 @@
 
     <!-- Form for data validation -->
     <div class="container mt-4">
-        <form id="dataValidationForm">
+        <form id="dataValidationForm" action="/DataLatih" method="post">
             <div class="mb-3">
                 <label for="totalDataset" class="form-label">Total Dataset</label>
-                <input type="text" class="form-control" id="totalDataset" placeholder="Masukan Total Datasets" required>
+                <input type="text" class="form-control" id="totalDataset" name="totalDataset" placeholder="Masukan Total Datasets" required>
             </div>
             <div class="mb-3">
                 <label for="ratio" class="form-label">Rasio Data Latih : Data Uji</label>
-                <select class="form-select" id="ratio">
-                    <option selected>Pilih Rasio</option>
-                    <option value="0.7">60% Latih - 40% Uji</option>
+                <select class="form-select" id="ratio" name="ratio">
+                    <option selected disabled>Pilih Rasio</option>
+                    <option value="0.6">60% Latih - 40% Uji</option>
                     <option value="0.7">70% Latih - 30% Uji</option>
                     <option value="0.8">80% Latih - 20% Uji</option>
                     <option value="0.9">90% Latih - 10% Uji</option>
@@ -55,11 +55,11 @@
             </div>
             <div class="mb-3">
                 <label for="numTrainingData" class="form-label">Jumlah Data Latih</label>
-                <input type="text" class="form-control" id="numTrainingData" disabled>
+                <input type="text" class="form-control" id="numTrainingData" name="numTrainingData" disabled>
             </div>
             <div class="mb-3">
                 <label for="numTestingData" class="form-label">Jumlah Data Uji</label>
-                <input type="text" class="form-control" id="numTestingData" disabled>
+                <input type="text" class="form-control" id="numTestingData" name="numTestingData" disabled>
             </div>
             <button type="submit" class="btn btn-primary">Tampilkan Data Latih</button>
         </form>

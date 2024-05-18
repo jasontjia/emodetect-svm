@@ -271,6 +271,9 @@ def form_unggah():
 
         if nada is not None and intonasi is not None and volume is not None:
             try:
+                # Mendapatkan nilai label manual yang dipilih oleh pengguna
+                label_manual = request.form['label']
+
                 connection = mysql.connector.connect(
                     host=db_host,
                     user=db_user,
@@ -281,7 +284,7 @@ def form_unggah():
                 cursor = connection.cursor()
 
                 # Masukkan data ke database
-                cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori) VALUES (%s, %s, %s, %s)", (file_name, nada, intonasi, volume))
+                cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori, label_manual) VALUES (%s, %s, %s, %s, %s)", (file_name, nada, intonasi, volume, label_manual))
                 connection.commit()
 
                 # Simpan nilai-nilai dalam session

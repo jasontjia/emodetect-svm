@@ -154,7 +154,7 @@
       const fileNameField = document.getElementById("fileNameField");
       const detectButton = document.getElementById("detectButton");
       const errorMessage = document.getElementById("errorMessage");
-    
+  
       // Event listener untuk perubahan pada input file
       fileInput.addEventListener("change", function () {
         const file = this.files[0];
@@ -162,12 +162,10 @@
           const fileName = file.name;
           const fileSize = (file.size / 1024 / 1024).toFixed(2); // Mengkonversi ukuran file ke MB dengan dua desimal
           const fileType = file.type;
-    
+  
           // Validasi jenis file dan ukuran
-          if (
-             
-            file.size <= 4 * 1024 * 1024
-          ) {
+          const validTypes = ['audio/mpeg', 'audio/wav']; // MIME type untuk MP3 adalah 'audio/mpeg'
+          if (validTypes.includes(fileType) && file.size <= 3 * 1024 * 1024) {
             fileNameField.innerHTML = `<p>Nama File: ${fileName} <button type="button" class="btn-close" aria-label="Close" id="clearFile"></button></p>`;
             fileInfo.innerHTML = `<p>Ukuran: ${fileSize} MB</p>`;
             detectButton.style.display = "block"; // Tampilkan tombol deteksi
@@ -176,12 +174,11 @@
             fileNameField.innerHTML = "";
             fileInfo.innerHTML = "";
             detectButton.style.display = "none"; // Sembunyikan tombol deteksi
-            errorMessage.textContent =
-              "File harus berformat MP3 atau WAV dan ukurannya tidak boleh melebihi 3MB.";
+            errorMessage.textContent = "File harus berformat MP3 atau WAV dan ukurannya tidak boleh melebihi 3 MB.";
           }
         }
       });
-    
+  
       // Event listener untuk tombol X (Batal)
       fileNameField.addEventListener("click", function (event) {
         if (event.target && event.target.id === "clearFile") {
@@ -192,6 +189,6 @@
           errorMessage.textContent = ""; // Menghapus pesan kesalahan
         }
       });
-    </script>    
+    </script>  
   </body>
 </html>
