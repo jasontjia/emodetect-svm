@@ -49,9 +49,9 @@ def extract_audio_features(audio_file):
 
         # Hitung nilai nada dari audio
         pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+        pitch_values = pitch[pitch > 0]
         
         # Hitung nilai intonasi
-        pitch_values = pitch[pitch > 0]
         median_pitch = np.median(pitch_values)
         pitch_diff = np.diff(pitch_values)
         intonation = np.mean(np.abs(pitch_diff)) if len(pitch_diff) > 0 else 0
