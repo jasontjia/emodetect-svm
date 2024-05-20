@@ -60,9 +60,9 @@ def extract_audio_features(audio_file):
         rms = np.sqrt(np.mean(y**2))
 
         # Konversi tipe data numpy.float32 ke float
-        median_pitch = float(median_pitch)
-        intonation = float(intonation)
-        rms = float(rms)
+        median_pitch = round(float(median_pitch), 3)
+        intonation = round(float(intonation), 3)
+        rms = round(float(rms), 3)
 
         return median_pitch, intonation, rms
 
@@ -153,13 +153,12 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Perhitungan Algoritma SVM RBF
+# Perhitungan SVM RBF
 def rbf_kernel(x, x_prime, gamma):
     distance_squared = np.sum((x - x_prime)**2)
     kernel_value = np.exp(-gamma * distance_squared)
     return kernel_value
 
-# Prediksi kelas menggunakan SVM dengan kernel RBF
 def predict_svm_rbf(X_train, y_train, X_test, gamma):
     n_train = len(X_train)
     n_test = len(X_test)
@@ -179,12 +178,15 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
             # Simpan nilai kernel ke dalam list
             kernel_values.append((X_train[j], X_test[i], kernel_value))
             # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
-            prediction += y_train[j] * kernel_value
-            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value}, kontribusi={y_train[j] * kernel_value}\n"
+            contrib = y_train[j] * kernel_value
+            if contrib == 0.0:
+                contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
+            prediction += contrib
+            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
         # Simpan nilai prediksi sebelum mengambil tanda
         prediction_values[i] = prediction
         # Simpan langkah perhitungan
-        calculation_step += f"  Nilai Klasifikasi : {prediction}\n"
+        calculation_step += f"  Nilai Klasifikasi : {prediction:.3f}\n"
         calculation_steps.append(calculation_step)
         # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
         predictions[i] = np.sign(prediction)
@@ -203,17 +205,18 @@ def hasil_single_audio_page():
     file_name = session.get('file_name')
 
     if nada is not None and intonasi is not None and volume is not None:
-        nada = float(nada)
-        intonasi = float(intonasi)
-        volume = float(volume)
+        # Konversi nilai menjadi float dan membulatkannya menjadi 3 angka di belakang koma
+        nada = round(float(nada), 3)
+        intonasi = round(float(intonasi), 3)
+        volume = round(float(volume), 3)
 
         angry_samples = np.array([
-            [entry['nada_ori'], entry['intonasi_ori'], entry['volume_ori']]
+            [round(float(entry['nada_ori']), 3), round(float(entry['intonasi_ori']), 3), round(float(entry['volume_ori']), 3)]
             for entry in data if entry['label_manual'] == 'Marah'
         ], dtype=float)
 
         non_angry_samples = np.array([
-            [entry['nada_ori'], entry['intonasi_ori'], entry['volume_ori']]
+            [round(float(entry['nada_ori']), 3), round(float(entry['intonasi_ori']), 3), round(float(entry['volume_ori']), 3)]
             for entry in data if entry['label_manual'] == 'Tidak Marah'
         ], dtype=float)
         
@@ -235,10 +238,12 @@ def hasil_single_audio_page():
 
         # Loop untuk menambahkan nilai kernel RBF ke dalam list kernel_values_display
         for (x_train, x_test, kernel_value) in kernel_values:
-            kernel_values_display.append(f"Kernel antara {x_train} dan {x_test}: {kernel_value}")
+            formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
+            formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
+            kernel_values_display.append(f"Kernel antara [{formatted_x_train}] dan [{formatted_x_test}]: {kernel_value:.3f}")
 
         # Simpan nilai prediksi 
-        prediction_value_display = prediction_value[0]
+        prediction_value_display = f"{prediction_value[0]:.3f}"
         
         return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data, prediction_result=prediction_result, kernel_values_display=kernel_values_display, prediction_value_display=prediction_value_display, calculation_steps=calculation_steps)
     
