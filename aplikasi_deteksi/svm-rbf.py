@@ -13,10 +13,12 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     predictions = np.zeros(n_test)
     prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
     kernel_values = []  # List untuk menyimpan nilai kernel RBF
+    calculation_steps = []  # List untuk menyimpan langkah-langkah perhitungan
     
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
         prediction = 0
+        calculation_step = f"Perhitungan untuk data uji {i+1}:\n"
         # Hitung nilai prediksi untuk sampel uji saat ini
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji
@@ -24,13 +26,20 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
             # Simpan nilai kernel ke dalam list
             kernel_values.append((X_train[j], X_test[i], kernel_value))
             # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
-            prediction += y_train[j] * kernel_value
+            contrib = y_train[j] * kernel_value
+            if contrib == 0.0:
+                contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
+            prediction += contrib
+            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
         # Simpan nilai prediksi sebelum mengambil tanda
         prediction_values[i] = prediction
+        # Simpan langkah perhitungan
+        calculation_step += f"  Nilai Klasifikasi : {prediction:.3f}\n"
+        calculation_steps.append(calculation_step)
         # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
         predictions[i] = np.sign(prediction)
     
-    return predictions.astype(int), prediction_values, kernel_values
+    return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
 # Contoh data fitur untuk dua kelas: marah dan tidak marah
 angry_samples = np.array([[1773.406, 3.432, 0.003],
@@ -55,7 +64,7 @@ new_sample = np.array([1774.55, 3.387, 0.028])
 gamma = 0.01
 
 # Lakukan prediksi menggunakan SVM dengan kernel RBF
-predicted_class, prediction_value, kernel_values = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+predicted_class, prediction_value, kernel_values, calculation_steps = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
 
 # Print hasil prediksi
 if predicted_class[0] == -1:
@@ -66,7 +75,12 @@ else:
 # Print nilai kernel RBF
 print("\nNilai kernel RBF:")
 for (x_train, x_test, kernel_value) in kernel_values:
-    print(f"Kernel antara {x_train} dan {x_test}: {kernel_value:.3f}")
+    print(f"Kernel antara {', '.join(map('{:.3f}'.format, x_train))} dan {', '.join(map('{:.3f}'.format, x_test))}: {kernel_value:.3f}")
 
 # Print nilai prediksi
 print(f"Nilai Klasifikasi: {prediction_value[0]:.3f}")
+
+# Print langkah-langkah perhitungan
+print("\nLangkah-langkah perhitungan:")
+for step in calculation_steps:
+    print(step)
