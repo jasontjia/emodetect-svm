@@ -18,7 +18,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan untuk data uji {i+1}:\n"
+        calculation_step = f"Perhitungan untuk sample uji {i+1}:\n"
         # List untuk menyimpan nilai kernel untuk sample uji ini
         kernel_values_per_test = []
         # Hitung nilai prediksi untuk sampel uji saat ini
