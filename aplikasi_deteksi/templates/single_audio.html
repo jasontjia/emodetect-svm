@@ -1,73 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
   <head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
-    <meta name="description" content />
-    <meta name="author" content />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="description" content="" />
+    <meta name="author" content="" />
     <title>Unggah File Single Audio</title>
-    <!-- Custom Google font-->
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="{{ url_for('static',filename='bootstrap.min.css') }}"
-    />
-    <link
-      href="{{ url_for('static', filename='images/emotion.png') }}"
-      rel="shortcut icon"
-    />
+    <!-- Google font khusus-->
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='bootstrap.min.css') }}" />
+    <link href="{{ url_for('static', filename='images/emotion.png') }}" rel="shortcut icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"
-      rel="stylesheet"
-    />
-    <!-- Bootstrap icons-->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
-    <!-- Core theme CSS (includes Bootstrap)-->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;900&display=swap" rel="stylesheet" />
+    <!-- Ikon Bootstrap-->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
+    <!-- Tema CSS inti (termasuk Bootstrap)-->
     <link href="css/styles.css" rel="stylesheet" />
   </head>
   <body class="d-flex flex-column">
     <main class="flex-shrink-0">
       <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
         <div class="container px-5">
-          <a class="navbar-brand" href="/Beranda"
-            ><span class="fw-bolder text-primary">Deteksi Emosi</span></a
-          >
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
+          <a class="navbar-brand" href="/Beranda"><span class="fw-bolder text-primary">Deteksi Emosi</span></a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
           </button>
           <div class="collapse navbar-collapse" id="navbarSupportedContent">
             <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
               <li class="nav-item">
-                <a
-                  class="nav-link text-primary"
-                  style="font-size: 18px"
-                  href="/Beranda"
-                  >Beranda</a
-                >
+                <a class="nav-link text-primary" style="font-size: 18px" href="/Beranda">Beranda</a>
               </li>
               <li class="nav-item">
-                <a
-                  class="nav-link text-primary"
-                  style="font-size: 18px"
-                  href="/SingleAudio"
-                  >Single Audio</a
-                >
+                <a class="nav-link text-primary" style="font-size: 18px" href="/SingleAudio">Single Audio</a>
               </li>
               <li class="nav-item">
                 <a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a>
@@ -76,15 +40,13 @@
           </div>
         </div>
       </nav>
-      <!-- Page content-->
+      <!-- Konten Halaman-->
       <section class="py-5">
         <div class="container px-5">
           <div class="bg-light rounded-4 py-5 px-4 px-md-5">
             <div class="text-center mb-5">
               <h1 class="fw-bolder">Single Audio</h1>
-              <p class="lead fw-normal text-muted mb-0">
-                Silahkan unggah audio pada tombol dibawah ini
-              </p>
+              <p class="lead fw-normal text-muted mb-0">Silahkan unggah audio pada tombol dibawah ini</p>
               <br />
               <p class="lead fw-normal text-danger mb-0">*MP3 dan WAV*</p>
             </div>
@@ -93,16 +55,10 @@
                 <form id="uploadForm" action="/HasilSingleAudio" method="post" enctype="multipart/form-data">
                   <!-- Field Nama File -->
                   <div class="mb-3" id="fileNameField"></div>
-                  <!-- Submit Button-->
+                  <!-- Tombol Unggah-->
                   <div class="d-grid">
                     <label for="fileInput" class="btn btn-primary btn-lg">
-                      Unggah<input
-                        type="file"
-                        id="fileInput"
-                        name="file"
-                        accept=".mp3, .wav"
-                        class="form-control d-none"
-                      />
+                      Unggah<input type="file" id="fileInput" name="file" accept=".mp3, .wav" class="form-control d-none" />
                     </label>
                   </div>
                   <br />
@@ -112,14 +68,15 @@
                   <div class="text-danger" id="errorMessage"></div>
                   <!-- Tombol Deteksi (awalnya disembunyikan) -->
                   <div class="d-grid" id="detectButtonContainer">
-                    <button
-                      class="btn btn-danger btn-lg"
-                      id="detectButton"
-                      type="submit"
-                      style="display: none"
-                    >
-                      Deteksi
-                    </button>
+                    <button class="btn btn-danger btn-lg" id="detectButton" type="submit" style="display: none">Deteksi</button>
+                    <div class="mt-3">
+                      <label for="labelOption" class="form-label">Label Manual:</label>
+                      <select class="form-select" id="labelOption" name="label_manual">
+                        <option selected disabled>Pilih Label</option>
+                        <option value="Marah">Marah</option>
+                        <option value="Tidak Marah">Tidak Marah</option>
+                      </select>
+                    </div>
                   </div>
                 </form>
               </div>
@@ -129,23 +86,18 @@
       </section>
     </main>
     <!-- Footer-->
-    <footer
-      class="bg-white py-4 mt-auto"
-      style="position: fixed; bottom: 0; width: 100%"
-    >
+    <footer class="bg-white py-4 mt-auto" style="position: fixed; bottom: 0; width: 100%">
       <div class="container px-5">
         <div class="row align-items-center justify-content-center">
           <div class="col-auto">
-            <div class="small m-0 px-10" style="font-size: 18px">
-              <strong>Copyright &copy; JC Developer</strong>
-            </div>
+            <div class="small m-0 px-10" style="font-size: 18px"><strong>Hak Cipta &copy; JC Developer</strong></div>
           </div>
         </div>
       </div>
     </footer>
     <!-- Bootstrap core JS-->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Core theme JS-->
+    <!-- Tema JS inti-->
     <script src="js/scripts.js"></script>
     <script>
       // Ambil elemen yang diperlukan dari HTML
@@ -154,7 +106,7 @@
       const fileNameField = document.getElementById("fileNameField");
       const detectButton = document.getElementById("detectButton");
       const errorMessage = document.getElementById("errorMessage");
-  
+
       // Event listener untuk perubahan pada input file
       fileInput.addEventListener("change", function () {
         const file = this.files[0];
@@ -162,7 +114,7 @@
           const fileName = file.name;
           const fileSize = (file.size / 1024 / 1024).toFixed(2); // Mengkonversi ukuran file ke MB dengan dua desimal
           const fileType = file.type;
-  
+
           // Validasi jenis file dan ukuran
           const validTypes = ['audio/mpeg', 'audio/wav']; // MIME type untuk MP3 adalah 'audio/mpeg'
           if (validTypes.includes(fileType) && file.size <= 3 * 1024 * 1024) {
@@ -178,7 +130,7 @@
           }
         }
       });
-  
+
       // Event listener untuk tombol X (Batal)
       fileNameField.addEventListener("click", function (event) {
         if (event.target && event.target.id === "clearFile") {

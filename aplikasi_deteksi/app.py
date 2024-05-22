@@ -70,10 +70,23 @@ def extract_audio_features(audio_file):
         print("Error extracting audio features:", e)
         return None, None, None
 
+# Define the directory where audio files are stored
+AUDIO_ORI_UJI_FOLDER = 'data uji/audio_ori_uji'
+MARAH_UJI_FOLDER = 'data uji/marah_uji'
+TIDAKMARAH_UJI_FOLDER = 'data uji/tidakmarah_uji'
+
 # Route untuk mengirimkan file audio
-@app.route('/audio/<path:filename>')
-def download_file(filename):
-    return send_from_directory(AUDIO_FOLDER, filename)
+@app.route('/audio/<folder>/<path:filename>')
+def download_file(folder, filename):
+    if folder == 'audio_ori_uji':
+        directory = AUDIO_ORI_UJI_FOLDER
+    elif folder == 'marah_uji':
+        directory = MARAH_UJI_FOLDER
+    elif folder == 'tidakmarah_uji':
+        directory = TIDAKMARAH_UJI_FOLDER
+    else:
+        return "Invalid folder", 404
+    return send_from_directory(directory, filename)
 
 # Route untuk setiap halaman web
 @app.route('/')  
@@ -96,12 +109,14 @@ def data_latih():
 def hasil_data_latih():
     return render_template('hasil_datalatih.html')
 
+## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
-def hasil_single_audio():  
-    if 'file' not in request.files:
+def hasil_single_audio():
+    if 'file' not in request.files or 'label_manual' not in request.form:
         return redirect('/SingleAudio')
 
     audio_file = request.files['file']
+    label_manual = request.form['label_manual']
 
     if audio_file.filename == '':
         return redirect('/SingleAudio')
@@ -119,7 +134,7 @@ def hasil_single_audio():
     # Hapus file sementara
     os.remove(temp_file_path)
 
-    if nada is not None and intonasi is not None and volume is not None:
+    if nada is not None and intonasi is not None and volume is not None and label_manual:
         try:
             connection = mysql.connector.connect(
                 host=db_host,
@@ -131,7 +146,10 @@ def hasil_single_audio():
             cursor = connection.cursor()
 
             # Masukkan data ke database
-            cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori) VALUES (%s, %s, %s, %s)", (file_name, nada, intonasi, volume))
+            cursor.execute(
+                "INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori, label_manual) VALUES (%s, %s, %s, %s, %s)",
+                (file_name, nada, intonasi, volume, label_manual)
+            )
             connection.commit()
 
             # Simpan nilai-nilai dalam session
@@ -139,6 +157,7 @@ def hasil_single_audio():
             session['intonasi'] = intonasi
             session['volume'] = volume
             session['file_name'] = file_name
+            session['label_manual'] = label_manual
 
             cursor.close()
             connection.close()
@@ -147,7 +166,6 @@ def hasil_single_audio():
 
         except Exception as e:
             print("Error inserting data into database:", e)
-            print("Type of feature values:", type(nada), type(intonasi), type(volume))
             return "Error occurred. Please try again later."
 
     else:
@@ -170,7 +188,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan untuk data uji {i+1}:\n"
+        calculation_step = f"Perhitungan untuk data baru {i+1}:\n"
         # Hitung nilai prediksi untuk sampel uji saat ini
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji
@@ -182,7 +200,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
             if contrib == 0.0:
                 contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
             prediction += contrib
-            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
+            calculation_step += f"  Kontribusi dari data uji {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
         # Simpan nilai prediksi sebelum mengambil tanda
         prediction_values[i] = prediction
         # Simpan langkah perhitungan
@@ -193,6 +211,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
+## Hasil Single Audio 
 @app.route('/HasilSingleAudio')
 def hasil_single_audio_page():
     data = get_data_from_database()
@@ -203,6 +222,7 @@ def hasil_single_audio_page():
     intonasi = session.get('intonasi')
     volume = session.get('volume')
     file_name = session.get('file_name')
+    label_manual = session.get('label_manual')
 
     if nada is not None and intonasi is not None and volume is not None:
         # Konversi nilai menjadi float dan membulatkannya menjadi 3 angka di belakang koma
@@ -210,6 +230,7 @@ def hasil_single_audio_page():
         intonasi = round(float(intonasi), 3)
         volume = round(float(volume), 3)
 
+        # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
         angry_samples = np.array([
             [round(float(entry['nada_ori']), 3), round(float(entry['intonasi_ori']), 3), round(float(entry['volume_ori']), 3)]
             for entry in data if entry['label_manual'] == 'Marah'
@@ -220,19 +241,51 @@ def hasil_single_audio_page():
             for entry in data if entry['label_manual'] == 'Tidak Marah'
         ], dtype=float)
         
+        # Exclude the labeled sample from the training data if it exists
+        if label_manual == 'Marah':
+            angry_samples = angry_samples[:-1] if len(angry_samples) > 0 else angry_samples
+        elif label_manual == 'Tidak Marah':
+            non_angry_samples = non_angry_samples[:-1] if len(non_angry_samples) > 0 else non_angry_samples
+        
+        # Gabungkan kedua set data untuk pelatihan
         X_train = np.vstack((angry_samples, non_angry_samples))
         y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
-        new_sample = np.array([nada, intonasi, volume], dtype=float)
+        # Contoh baru (sampel baru)
+        new_sample = np.array([[nada, intonasi, volume]], dtype=float)
         gamma = 0.01
 
         # Lakukan prediksi menggunakan SVM dengan kernel RBF
-        predicted_class, prediction_value, kernel_values, calculation_steps = predict_svm_rbf(X_train, y_train, [new_sample], gamma)
+        predicted_class, prediction_value, kernel_values, calculation_steps = predict_svm_rbf(X_train, y_train, new_sample, gamma)
 
-        if predicted_class == -1:
+        if predicted_class[0] == -1:
             prediction_result = "Marah"
         else:
             prediction_result = "Tidak Marah"
+
+        # Simpan hasil prediksi ke database
+        try:
+            connection = mysql.connector.connect(
+                host=db_host,
+                user=db_user,
+                password=db_password,
+                database=db_database
+            )
+
+            cursor = connection.cursor()
+
+            cursor.execute(
+                "UPDATE audio_data SET label_otomatis=%s WHERE nama_audio=%s",
+                (prediction_result, file_name)
+            )
+            connection.commit()
+
+            cursor.close()
+            connection.close()
+
+        except Exception as e:
+            print("Error updating data in database:", e)
+            return "Error occurred while updating the database. Please try again later."
 
         kernel_values_display = []  # List untuk menyimpan nilai kernel RBF
 
@@ -249,17 +302,18 @@ def hasil_single_audio_page():
     
     return "Data tidak lengkap untuk melakukan prediksi."
 
+
 # Form Unggah
-@app.route('/FormUnggah', methods=['GET', 'POST'])
-def form_unggah():  
+@app.route('/FormUnggahUji', methods=['GET', 'POST'])
+def form_unggah_uji():  
     if request.method == 'POST':
         if 'file' not in request.files:
-            return redirect('/FormUnggah')
+            return redirect('/FormUnggahUji')
 
         audio_file = request.files['file']
 
         if audio_file.filename == '':
-            return redirect('/FormUnggah')
+            return redirect('/FormUnggahUji')
 
         # Dapatkan nama file audio
         file_name = audio_file.filename
@@ -301,7 +355,7 @@ def form_unggah():
                 cursor.close()
                 connection.close()
 
-                return render_template('form-unggah.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
+                return render_template('form-unggah-uji.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
 
             except Exception as e:
                 print("Error inserting data into database:", e)
@@ -316,7 +370,7 @@ def form_unggah():
         nada = None
         intonasi = None
         volume = None
-        return render_template('form-unggah.html')
+        return render_template('form-unggah-uji.html')
 
 if __name__ == '__main__':
     app.run(debug=True)
