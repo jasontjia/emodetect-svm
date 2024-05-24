@@ -1,4 +1,5 @@
-from flask import Flask, render_template, redirect, request, send_from_directory, session
+from flask import Flask, render_template, redirect, request, flash, send_from_directory, session
+from werkzeug.utils import secure_filename
 import mysql.connector
 import librosa
 import numpy as np
@@ -101,9 +102,42 @@ def beranda():
 def single_audio():
     return render_template('single_audio.html')
 
-@app.route('/DataLatih')
+##Folder Upload Data Latih
+app.config['UPLOAD_FOLDER'] = 'uploads/'
+
+if not os.path.exists(app.config['UPLOAD_FOLDER']):
+    os.makedirs(app.config['UPLOAD_FOLDER'])
+    
+##Form Data Latih
+@app.route('/DataLatih', methods=['GET', 'POST'])
 def data_latih():
+    if request.method == 'POST':
+        audio_files = request.files.getlist('audioFiles')
+        data = []
+        for audio_file in audio_files:
+            if audio_file:
+                file_name = secure_filename(audio_file.filename)
+                nada, intonasi, volume = extract_audio_features(audio_file)
+                if nada is not None:
+                    data.append((file_name, nada, intonasi, volume))
+        return render_template('data_latih.html', data=data, enumerate=enumerate)
     return render_template('data_latih.html')
+
+
+def extract_audio_features(audio_file):
+    try:
+        y, sr = librosa.load(audio_file)
+        pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+        pitch_values = pitch[pitch > 0]
+        median_pitch = round(float(np.median(pitch_values)), 3)
+        pitch_diff = np.diff(pitch_values)
+        intonation = round(float(np.mean(np.abs(pitch_diff))), 3) if len(pitch_diff) > 0 else 0.000
+        rms = round(float(np.sqrt(np.mean(y**2))), 3)
+        
+        return median_pitch, intonation, rms
+    except Exception as e:
+        print("Error extracting audio features:", e)
+        return None, None, None
 
 @app.route('/HasilDataLatih')
 def hasil_data_latih():
