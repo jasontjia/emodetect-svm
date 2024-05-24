@@ -1,4 +1,4 @@
-from flask import Flask, render_template, redirect, request, flash, send_from_directory, session
+from flask import Flask, render_template, redirect, request, jsonify, send_from_directory, session
 from werkzeug.utils import secure_filename
 import mysql.connector
 import librosa
@@ -41,6 +41,32 @@ def get_data_from_database():
     except Exception as e:
         print("Error:", e)
         return None
+
+# Fungsi untuk menyimpan data ke database
+def simpan_data_ke_database(data):
+    try:
+        connection = mysql.connector.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_database
+        )
+        cursor = connection.cursor()
+
+        # Lakukan loop untuk setiap baris data dan masukkan ke dalam database
+        for row in data:
+            query = """
+            INSERT INTO audio_latih (nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih) 
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            cursor.execute(query, (row['nama_audio_latih'], row['nada_ori_latih'], row['intonasi_ori_latih'], row['volume_ori_latih'], row['label_manual_latih']))
+
+        connection.commit()
+        cursor.close()
+        connection.close()
+    except Exception as e:
+        print("Database Error:", e)
+        raise
 
 # Fungsi untuk mengekstrak fitur audio
 def extract_audio_features(audio_file):
@@ -133,9 +159,23 @@ def extract_audio_features(audio_file):
         print("Error extracting audio features:", e)
         return None, None, None
 
+#Hasil Data Latih
 @app.route('/HasilDataLatih', methods=['POST'])
 def hasil_data_latih():
-    return render_template('hasil_datalatih.html')
+    if request.method == 'POST':
+        try:
+            audio_latih = request.get_json()  # Mendapatkan data JSON dari permintaan POST
+            print("Received Data:", audio_latih)
+            if audio_latih:
+                simpan_data_ke_database(audio_latih)  # Memanggil fungsi untuk menyimpan data ke database
+                return jsonify({"message": "Data berhasil disimpan ke dalam database."}), 200
+            else:
+                return jsonify({"error": "Tidak ada data yang diterima."}), 400
+        except Exception as e:
+            print("Error:", e)
+            return jsonify({"error": "Terjadi kesalahan saat menyimpan data ke database."}), 500
+    else:
+        return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
 
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
