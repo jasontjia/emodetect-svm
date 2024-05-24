@@ -1,242 +1,221 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
+<head>
     <meta charset="utf-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1, shrink-to-fit=no"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <meta name="description" content />
     <meta name="author" content />
     <title>Form Data Latih</title>
     <!-- Custom Google font-->
-    <link
-      rel="stylesheet"
-      type="text/css"
-      href="{{ url_for('static',filename='bootstrap.min.css') }}"
-    />
-    <link
-      href="{{ url_for('static', filename='images/emotion.png') }}"
-      rel="shortcut icon"
-    />
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='bootstrap.min.css') }}" />
+    <link href="{{ url_for('static', filename='images/emotion.png') }}" rel="shortcut icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
     <!-- Bootstrap icons-->
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css"
-      rel="stylesheet"
-    />
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
     <!-- Core theme CSS (includes Bootstrap)-->
     <link href="css/styles.css" rel="stylesheet" />
-  </head>
-  <body class="d-flex flex-column">
-    <main class="flex-shrink-0">
-      <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
+    <style>
+        /* Menyembunyikan tombol Deteksi dan Tampilkan Data secara default */
+        #detectButtonContainer,
+        #showDataButtonContainer {
+            display: none;
+        }
+    </style>
+</head>
+<body class="d-flex flex-column">
+<main class="flex-shrink-0">
+    <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
         <div class="container px-5">
-          <a class="navbar-brand" href="/Beranda"
-            ><span class="fw-bolder text-primary">Deteksi Emosi</span></a
-          >
-          <button
-            class="navbar-toggler"
-            type="button"
-            data-bs-toggle="collapse"
-            data-bs-target="#navbarSupportedContent"
-            aria-controls="navbarSupportedContent"
-            aria-expanded="false"
-            aria-label="Toggle navigation"
-          >
-            <span class="navbar-toggler-icon"></span>
-          </button>
-          <div class="collapse navbar-collapse" id="navbarSupportedContent">
-            <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
-              <li class="nav-item">
-                <a
-                  class="nav-link text-primary"
-                  style="font-size: 18px"
-                  href="/Beranda"
-                  >Beranda</a
-                >
-              </li>
-              <li class="nav-item">
-                <a
-                  class="nav-link text-primary"
-                  style="font-size: 18px"
-                  href="/SingleAudio"
-                  >Single Audio</a
-                >
-              </li>
-              <li class="nav-item">
-                <a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a>
-              </li>
-            </ul>
-          </div>
+            <a class="navbar-brand" href="/Beranda">
+                <span class="fw-bolder text-primary">Deteksi Emosi</span>
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent" aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                <ul class="navbar-nav ms-auto mb-2 mb-lg-0 small fw-bolder">
+                    <li class="nav-item">
+                        <a class="nav-link text-primary" style="font-size: 18px" href="/Beranda">Beranda</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-primary" style="font-size: 18px" href="/SingleAudio">Single Audio</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-primary" style="font-size: 18px;" href="/DataLatih">Data Training</a>
+                    </li>
+                </ul>
+            </div>
         </div>
-      </nav>
-      <!-- Page content-->
-      <section class="py-5">
+    </nav>
+    <!-- Page content-->
+    <section class="py-5">
         <div class="container px-5">
-          <div class="bg-light rounded-4 py-5 px-4 px-md-5">
-            <div class="text-center mb-5">
-              <h1 class="fw-bolder">Form Data Latih</h1>
-              <p class="lead fw-normal text-muted mb-0">
-                Silahkan unggah audio pada tombol dibawah ini
-              </p>
-              <br />
-              <p class="lead fw-normal text-danger mb-0">*MP3 dan WAV*</p>
-            </div>
-            <div class="row gx-5 justify-content-center">
-              <div class="col-lg-8 col-xl-6">
-                <form id="uploadForm" action="/" method="post" enctype="multipart/form-data">
-                  <!-- Field Nama File -->
-                  <div class="mb-3" id="fileNameField"></div>
-                  <!-- Submit Button-->
-                  <div class="d-grid">
-                    <label for="fileInput" class="btn btn-primary btn-lg">
-                      Unggah<input
-                        type="file"
-                        id="fileInput"
-                        name="file"
-                        accept=".mp3, .wav"
-                        class="form-control d-none"
-                        multiple
-                      />
-                    </label>
-                  </div>
-                  <br />
-                  <!-- Informasi File -->
-                  <div id="fileInfo" class="mb-3"></div>
-                  <!-- Pesan Kesalahan -->
-                  <div class="text-danger" id="errorMessage"></div>
-                  <!-- Tombol Deteksi (awalnya disembunyikan) -->
-                  <div class="d-grid" id="detectButtonContainer">
-                    <button
-                      class="btn btn-danger btn-lg"
-                      id="detectButton"
-                      type="submit"
-                      style="display: none"
-                    >
-                      Deteksi
-                    </button>
-                  </div>
-                </form>
-              </div>
-            </div>
-          </div>
-          <br>
-          <div class="card">
-            <div class="card-header">
-                <i class="fas fa-file me-1"></i>
-                <strong>Tabel Data Latih </strong> 
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-bordered table-striped" id="audioTable">
-                        <thead class="table-primary">
-                            <tr>
-                                <th>Nama Audio</th>
-                                <th>Nada Ori</th>
-                                <th>Intonasi Ori</th>
-                                <th>Volume Ori</th>
-                                <th>Label Manual</th>
-                                <th>Label Otomatis</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for row in data %}
-                            <tr>
-                                <td>{{ row['nama_audio'] }}</td>
-                                <td>{{ row['nada_ori'] }}</td>
-                                <td>{{ row['intonasi_ori'] }}</td>
-                                <td>{{ row['volume_ori'] }}</td>
-                                <td>{{ row['label_manual'] }}</td>
-                                <td>{{ row['label_otomatis'] }}</td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <div class="bg-light rounded-4 py-5 px-4 px-md-5">
+                <div class="text-center mb-5">
+                    <h1 class="fw-bolder">Form Data Latih</h1>
+                    <p class="lead fw-normal text-muted mb-0">Silahkan unggah audio pada tombol dibawah ini</p>
+                    <br />
+                    <p class="lead fw-normal text-danger mb-0">*MP3 dan WAV*</p>
+                </div>
+                <div class="row gx-5 justify-content-center">
+                    <div class="col-lg-8 col-xl-6">
+                        <form id="uploadForm" action="/" method="post" enctype="multipart/form-data">
+                            <!-- Field Nama File -->
+                            <div class="mb-3" id="fileNameField"></div>
+                            <!-- Submit Button-->
+                            <div class="d-grid">
+                                <label for="fileInput" class="btn btn-primary btn-lg">
+                                    Unggah<input type="file" id="fileInput" name="file" accept=".mp3, .wav" class="form-control d-none" multiple />
+                                </label>
+                            </div>
+                            <br>
+                            <!-- Tombol Tampilkan Data (awalnya disembunyikan) -->
+                            <div class="d-grid" id="showDataButtonContainer">
+                              <button class="btn btn-success btn-lg" id="showDataButton" type="button">Tampilkan Data</button>
+                            </div>
+                            <!-- Informasi File -->
+                            <div id="fileInfo" class="mb-3"></div>
+                            <!-- Pesan Kesalahan -->
+                            <div class="text-danger" id="errorMessage"></div>
+                        </form>
+                    </div>
                 </div>
             </div>
-          </div>
-        </div>
-      </section>
-    </main>
-    <!-- Footer-->
-    <footer
-      class="bg-white py-4 mt-auto"
-      style=" bottom: 0; width: 100%"
-    >
-      <div class="container px-5">
-        <div class="row align-items-center justify-content-center">
-          <div class="col-auto">
-            <div class="small m-0 px-10" style="font-size: 18px">
-              <strong>Copyright &copy; JC Developer</strong>
+            <br>
+            <div class="card">
+                <div class="card-header">
+                    <i class="fas fa-file me-1"></i>
+                    <strong>Tabel Data Latih </strong> 
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-striped" id="audioTable">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Nama Audio</th>
+                                    <th>Nada Ori</th>
+                                    <th>Intonasi Ori</th>
+                                    <th>Volume Ori</th>
+                                    <th>Label Manual</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                              {% if audio_features %}
+                              <tr>
+                                  <td>New Audio</td>
+                                  <td>{{ audio_features.median_pitch }}</td>
+                                  <td>{{ audio_features.intonation }}</td>
+                                  <td>{{ audio_features.rms }}</td>
+                                  <!-- Tambahkan kolom untuk label manual -->
+                                  <td>
+                                      <select class="form-select" id="labelSelect">
+                                          <option value="marah">Marah</option>
+                                          <option value="tidak_marah">Tidak Marah</option>
+                                      </select>
+                                  </td>
+                              </tr>
+                              {% endif %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <!-- Tombol Deteksi (awalnya disembunyikan) -->
+            <div class="d-grid justify-content-center" id="detectButtonContainer">
+                <button class="btn btn-danger btn-lg" id="detectButton" type="submit" style="width: 100px;">Deteksi</button>
             </div>
           </div>
-        </div>
+      </section>
+  </main>
+  <!-- Footer-->
+  <footer class="bg-white py-4 mt-auto" style="bottom: 0; width: 100%">
+      <div class="container px-5">
+          <div class="row align-items-center justify-content-center">
+              <div class="col-auto">
+                  <div class="small m-0 px-10" style="font-size: 18px">
+                          <strong>Copyright &copy; JC Developer</strong>
+                      </div>
+                  </div>
+              </div>
+          </div>
       </div>
-    </footer>
-    <!-- Bootstrap core JS-->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-    <!-- Core theme JS-->
-    <script src="js/scripts.js"></script>
-    <script>
-      // Ambil elemen yang diperlukan dari HTML
-      const fileInput = document.getElementById("fileInput");
-      const fileNameField = document.getElementById("fileNameField");
-      const detectButton = document.getElementById("detectButton");
-      const errorMessage = document.getElementById("errorMessage");
+  </footer>
+</body>
+<!-- Bootstrap core JS-->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Core theme JS-->
+<script src="js/scripts.js"></script>
+<!-- Bagian head dan elemen HTML lainnya -->
+<script>
+  // Ambil elemen yang diperlukan dari HTML
+  const fileInput = document.getElementById("fileInput");
+  const fileNameField = document.getElementById("fileNameField");
+  const detectButton = document.getElementById("detectButton");
+  const showDataButton = document.getElementById("showDataButton");
+  const errorMessage = document.getElementById("errorMessage");
 
-      // Event listener untuk perubahan pada input file
-      fileInput.addEventListener("change", function () {
-        const files = this.files;
-        fileNameField.innerHTML = "";
-        errorMessage.textContent = "";
-        let validFilesCount = 0;
+  // Sembunyikan tombol deteksi dan tampilkan data secara default
+  detectButton.style.display = "none";
+  showDataButton.style.display = "none";
 
-        Array.from(files).forEach(file => {
+  // Event listener untuk perubahan pada input file
+  fileInput.addEventListener("change", function () {
+      const files = this.files;
+      fileNameField.innerHTML = "";
+      errorMessage.textContent = "";
+      let validFilesCount = 0;
+
+      Array.from(files).forEach(file => {
           const fileName = file.name;
           const fileType = file.type;
 
           // Validasi jenis file dan ukuran
           const validTypes = ['audio/mpeg', 'audio/wav']; // MIME type untuk MP3 adalah 'audio/mpeg'
           if (validTypes.includes(fileType) && file.size <= 3 * 1024 * 1024) {
-            validFilesCount++;
-            fileNameField.innerHTML += `<p>Nama File: ${fileName} <button type="button" class="btn-close" aria-label="Close" data-file-index="${validFilesCount}"></button></p>`;
+              validFilesCount++;
+              fileNameField.innerHTML += `<p>Nama File: ${fileName} <button type="button" class="btn-close" aria-label="Close" data-file-index="${validFilesCount}"></button></p>`;
           } else {
-            errorMessage.textContent = "Beberapa file tidak valid (harus berformat MP3 atau WAV dan ukurannya tidak boleh melebihi 3 MB).";
+              errorMessage.textContent = "Beberapa file tidak valid (harus berformat MP3 atau WAV dan ukurannya tidak boleh melebihi 3 MB).";
           }
-        });
-
-        if (validFilesCount > 0) {
-          detectButton.style.display = "block"; // Tampilkan tombol deteksi jika ada file yang valid
-        } else {
-          detectButton.style.display = "none"; // Sembunyikan tombol deteksi jika tidak ada file yang valid
-        }
       });
 
-      // Event listener untuk tombol X (Batal)
-      fileNameField.addEventListener("click", function (event) {
-        if (event.target && event.target.classList.contains("btn-close")) {
+      // Tampilkan atau sembunyikan tombol deteksi dan tampilkan data sesuai dengan jumlah file yang valid
+      if (validFilesCount > 0) {
+          detectButton.style.display = "block";
+          showDataButton.style.display = "block";
+      } else {
+          detectButton.style.display = "none";
+          showDataButton.style.display = "none";
+      }
+  });
+
+  // Event listener untuk tombol X (Batal)
+  fileNameField.addEventListener("click", function (event) {
+      if (event.target && event.target.classList.contains("btn-close")) {
           const fileIndex = event.target.getAttribute("data-file-index");
           const dt = new DataTransfer();
           const { files } = fileInput;
 
           Array.from(files).forEach((file, index) => {
-            if (index != fileIndex - 1) {
-              dt.items.add(file);
-            }
+              if (index != fileIndex - 1) {
+                  dt.items.add(file);
+              }
           });
 
           fileInput.files = dt.files;
 
           const changeEvent = new Event("change");
           fileInput.dispatchEvent(changeEvent);
-        }
-      });
-    </script>
-  </body>
+      }
+  });
+
+  // Event listener untuk tombol Tampilkan Data
+  showDataButton.addEventListener("click", function () {
+      // Logika untuk menampilkan data
+      alert("Data ditampilkan!");
+  });
+</script>
 </html>

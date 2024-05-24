@@ -188,7 +188,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan untuk data baru {i+1}:\n"
+        calculation_step = f"Perhitungan untuk data baru:\n"
         # Hitung nilai prediksi untuk sampel uji saat ini
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji
@@ -303,7 +303,7 @@ def hasil_single_audio_page():
     return "Data tidak lengkap untuk melakukan prediksi."
 
 
-# Form Unggah
+# Form Unggah Uji
 @app.route('/FormUnggahUji', methods=['GET', 'POST'])
 def form_unggah_uji():  
     if request.method == 'POST':
@@ -371,6 +371,79 @@ def form_unggah_uji():
         intonasi = None
         volume = None
         return render_template('form-unggah-uji.html')
+    
+#Form Unggah Latih
+@app.route('/FormUnggahLatih', methods=['GET', 'POST'])
+def form_unggah_latih():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect('/FormUnggahLatih')
+
+        audio_file = request.files['file']
+
+        if audio_file.filename == '':
+            return redirect('/FormUnggahLatih')
+
+        # Dapatkan nama file audio
+        file_name = audio_file.filename
+
+        # Simpan file sementara
+        temp_file_path = 'temp_audio.wav'
+        audio_file.save(temp_file_path)
+
+        # Ekstrak fitur audio
+        nada, intonasi, volume = extract_audio_features(temp_file_path)
+
+        # Hapus file sementara
+        os.remove(temp_file_path)
+
+        if nada is not None and intonasi is not None and volume is not None:
+            try:
+                # Mendapatkan nilai label manual yang dipilih oleh pengguna
+                label_manual = request.form['label']
+
+                connection = mysql.connector.connect(
+                    host=db_host,
+                    user=db_user,
+                    password=db_password,
+                    database=db_database
+                )
+
+                cursor = connection.cursor()
+
+                # Masukkan data ke tabel audio_latih
+                cursor.execute(
+                    "INSERT INTO audio_latih (nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih) VALUES (%s, %s, %s, %s, %s)",
+                    (file_name, nada, intonasi, volume, label_manual)
+                )
+                connection.commit()
+
+                # Simpan nilai-nilai dalam session
+                session['nada'] = nada
+                session['intonasi'] = intonasi
+                session['volume'] = volume
+                session['file_name'] = file_name
+
+                cursor.close()
+                connection.close()
+
+                return render_template('form-unggah-latih.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
+
+            except Exception as e:
+                print("Error inserting data into database:", e)
+                print("Type of feature values:", type(nada), type(intonasi), type(volume))
+                return "Error occurred. Please try again later."
+
+        else:
+            return "Error extracting audio features. Please try again with a different file."
+
+    elif request.method == 'GET':
+        # Nilai default jika belum ada file audio yang diproses
+        nada = None
+        intonasi = None
+        volume = None
+        return render_template('form-unggah-latih.html')
+
 
 if __name__ == '__main__':
     app.run(debug=True)

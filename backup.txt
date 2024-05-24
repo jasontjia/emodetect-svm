@@ -1229,3 +1229,5 @@ y_pred = [-1, 1, 0, 0, -1, 1]
 conf_matrix = confusion_matrix_3x3(y_true, y_pred)
 print("Confusion Matrix:")
 print(conf_matrix)
+
+{i+1}:\n"

@@ -56,6 +56,8 @@
             <p class="fw-bold">Label Manual: {{ session['label_manual'] }}</p>
         </div>
         <hr>
+        <h4 class="text-center">Langkah Perhitungan Klasifikasi:</h4>
+        <hr>
         <div class="text-center">
             <h4>Nilai Kernel RBF Antara Data UJi dan Data Baru:</h4>
             <ul class="list-unstyled">
@@ -66,7 +68,6 @@
         </div>
         <br>
         <div class="text-center">
-            <h4>Langkah Perhitungan Nilai Klasifikasi:</h4>
             <pre>
                 <strong>
                 {% for step in calculation_steps %}
@@ -75,7 +76,6 @@
                 </strong>
             </pre>
         </div>
-        <p class="fw-bold text-center">Nilai Klasifikasi: {{ prediction_value_display }}</p>
         <h4 class="text-center">Hasil Emosi: {{ prediction_result }}</h4>
     </div>
 </main>
