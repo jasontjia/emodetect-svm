@@ -1231,3 +1231,5 @@ print("Confusion Matrix:")
 print(conf_matrix)
 
 {i+1}:\n"
+
+   detectButton.style.display = "none";

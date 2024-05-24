@@ -101,12 +101,6 @@ def beranda():
 @app.route('/SingleAudio')
 def single_audio():
     return render_template('single_audio.html')
-
-##Folder Upload Data Latih
-app.config['UPLOAD_FOLDER'] = 'uploads/'
-
-if not os.path.exists(app.config['UPLOAD_FOLDER']):
-    os.makedirs(app.config['UPLOAD_FOLDER'])
     
 ##Form Data Latih
 @app.route('/DataLatih', methods=['GET', 'POST'])
@@ -139,7 +133,7 @@ def extract_audio_features(audio_file):
         print("Error extracting audio features:", e)
         return None, None, None
 
-@app.route('/HasilDataLatih')
+@app.route('/HasilDataLatih', methods=['POST'])
 def hasil_data_latih():
     return render_template('hasil_datalatih.html')
 
