@@ -136,9 +136,9 @@
                 </div>
                 <br>
                 <!-- Tombol Deteksi (awalnya disembunyikan) -->
-                <form id="uploadForm" action="/DataLatih" method="POST" enctype="multipart/form-data">
+                <form id="uploadForm" action="/HasilDataLatih" method="POST" enctype="multipart/form-data">
                 <div class="d-grid justify-content-center" id="detectButtonContainer">
-                    <button class="btn btn-danger btn-lg" id="detectButton" type="button" style="width: 100px;">Deteksi</button>
+                    <button class="btn btn-danger btn-lg" id="detectButton" type="submit" style="width: 100px;">Deteksi</button>
                 </div>
                 </form>
             </div>
@@ -175,7 +175,6 @@
     const audioTableBody = document.querySelector("#audioTable tbody");
 
     // Sembunyikan tombol deteksi dan tampilkan data secara default
-    detectButton.style.display = "none";
     showDataButton.style.display = "none";
 
     // Event listener untuk perubahan pada input file
