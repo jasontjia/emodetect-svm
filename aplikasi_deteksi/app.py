@@ -202,6 +202,7 @@ def hasil_data_latih():
     else:
         return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
 
+
 # Perhitungan SVM RBF Data Latih
 def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
     n_train = len(X_train)
