@@ -62,7 +62,8 @@ y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
 # Prediksi kelas untuk contoh baru
 # Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([[1774.55, 3.387, 0.028]])
+new_sample = np.array([[1774.55, 3.387, 0.028],
+                       [1774.55, 3.387, 0.028]])
 
 # Parameter gamma untuk kernel RBF
 gamma = 0.01

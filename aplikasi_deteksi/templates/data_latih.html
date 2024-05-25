@@ -269,49 +269,51 @@
             "pageLength": 10 // Jumlah data entries default
         });
     });
-// Event listener untuk tombol Deteksi
-detectButton.addEventListener("click", function (event) {
-    event.preventDefault();
 
-    const audioData = [];
+    // Event listener untuk tombol Deteksi
+    detectButton.addEventListener("click", function (event) {
+        event.preventDefault();
 
-    // Ambil data dari setiap baris tabel
-    Array.from(audioTableBody.rows).forEach(row => {
-        const nama_audio_latih = row.cells[1].textContent;
-        const nada_ori_latih = row.cells[2].textContent;
-        const intonasi_ori_latih = row.cells[3].textContent;
-        const volume_ori_latih = row.cells[4].textContent;
-        const label_manual_latih = row.cells[5].querySelector("select").value;
-        audioData.push({
-            nama_audio_latih: nama_audio_latih,
-            nada_ori_latih: nada_ori_latih,
-            intonasi_ori_latih: intonasi_ori_latih,
-            volume_ori_latih: volume_ori_latih,
-            label_manual_latih: label_manual_latih
+        const audioData = [];
+
+        // Ambil data dari setiap baris tabel
+        Array.from(audioTableBody.rows).forEach(row => {
+            const nama_audio_latih = row.cells[1].textContent;
+            const nada_ori_latih = row.cells[2].textContent;
+            const intonasi_ori_latih = row.cells[3].textContent;
+            const volume_ori_latih = row.cells[4].textContent;
+            const label_manual_latih = row.cells[5].querySelector("select").value;
+            audioData.push({
+                nama_audio_latih: nama_audio_latih,
+                nada_ori_latih: nada_ori_latih,
+                intonasi_ori_latih: intonasi_ori_latih,
+                volume_ori_latih: volume_ori_latih,
+                label_manual_latih: label_manual_latih
+            });
+        });
+
+        // Kirim data ke server Flask
+        fetch('/HasilDataLatih', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(audioData)
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Gagal menyimpan data ke database.');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Redirect ke halaman HasilDataLatih
+            window.location.href = '/HasilDataLatih';
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Terjadi kesalahan. Silakan coba lagi.');
         });
     });
-
-    // Kirim data ke server Flask
-    fetch('/HasilDataLatih', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(audioData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Gagal menyimpan data ke database.');
-        }
-        return response.json();
-    })
-    .then(data => {
-        alert(data.message); // Tampilkan pesan sukses
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Terjadi kesalahan. Silakan coba lagi.');
-    });
-});
 </script>
 </html>

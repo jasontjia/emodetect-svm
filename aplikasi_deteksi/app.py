@@ -17,7 +17,7 @@ db_database = 'audio'
 # Path ke folder audio_ori di luar direktori static
 AUDIO_FOLDER = os.path.join(app.root_path, 'audio_ori')
 
-# Fungsi untuk mendapatkan data dari database
+# Fungsi untuk mendapatkan data uji dari database
 def get_data_from_database():
     try:
         connection = mysql.connector.connect(
@@ -42,7 +42,32 @@ def get_data_from_database():
         print("Error:", e)
         return None
 
-# Fungsi untuk menyimpan data ke database
+# Fungsi untuk mendapatkan data uji dari database
+def tarik_database():
+    try:
+        connection = mysql.connector.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_database
+        )
+
+        cursor = connection.cursor(dictionary=True)
+
+        cursor.execute("SELECT nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih FROM audio_latih")
+
+        data_latih = cursor.fetchall()
+
+        cursor.close()
+        connection.close()
+
+        return data_latih
+
+    except Exception as e:
+        print("Error:", e)
+        return None
+    
+# Fungsi untuk menyimpan data training ke database
 def simpan_data_ke_database(data):
     try:
         connection = mysql.connector.connect(
@@ -143,7 +168,7 @@ def data_latih():
         return render_template('data_latih.html', data=data, enumerate=enumerate)
     return render_template('data_latih.html')
 
-
+## Ekstraksi Audio Data Latih
 def extract_audio_features(audio_file):
     try:
         y, sr = librosa.load(audio_file)
@@ -159,7 +184,7 @@ def extract_audio_features(audio_file):
         print("Error extracting audio features:", e)
         return None, None, None
 
-#Hasil Data Latih
+# Hasil Data Latih
 @app.route('/HasilDataLatih', methods=['POST'])
 def hasil_data_latih():
     if request.method == 'POST':
@@ -176,6 +201,91 @@ def hasil_data_latih():
             return jsonify({"error": "Terjadi kesalahan saat menyimpan data ke database."}), 500
     else:
         return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
+
+# Perhitungan SVM RBF Data Latih
+def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
+    n_train = len(X_train)
+    n_test = len(X_test)
+    predictions = np.zeros(n_test)
+    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+    kernel_values = []  # List untuk menyimpan nilai kernel RBF
+    calculation_steps = []  # List untuk menyimpan langkah-langkah perhitungan
+    
+    # Looping untuk setiap sampel di data uji
+    for i in range(n_test):
+        prediction = 0
+        calculation_step = f"Perhitungan untuk data baru { i+1} :\n "
+        # Hitung nilai prediksi untuk sampel uji saat ini
+        for j in range(n_train):
+            # Hitung nilai kernel antara sampel latih dan sampel uji
+            kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
+            # Simpan nilai kernel ke dalam list
+            kernel_values.append((X_train[j], X_test[i], kernel_value))
+            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            contrib = y_train[j] * kernel_value
+            if contrib == 0.0:
+                contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
+            prediction += contrib
+            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
+        # Simpan nilai prediksi sebelum mengambil tanda
+        prediction_values[i] = prediction
+        # Simpan langkah perhitungan
+        calculation_step += f"  Nilai Klasifikasi : {prediction:.3f}\n"
+        calculation_steps.append(calculation_step)
+        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+        predictions[i] = np.sign(prediction)
+    
+    return predictions.astype(int), prediction_values, kernel_values, calculation_steps
+
+## Hasil Data Latih
+@app.route('/HasilDataLatih')
+def hasil_data_latih_():
+    data_latih = tarik_database()
+    if data_latih is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
+    angry_samples = np.array([
+        [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
+        for entry in data_latih if entry['label_manual_latih'] == 'Marah'
+    ], dtype=float)
+
+    non_angry_samples = np.array([
+        [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
+        for entry in data_latih if entry['label_manual_latih'] == 'Tidak Marah'
+    ], dtype=float)
+    
+    # Gabungkan kedua set data untuk pelatihan
+    X_train = np.vstack((angry_samples, non_angry_samples))
+    y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+    
+    gamma = 0.01
+
+    # Ambil sampel terbaru dari database
+    latest_entry = data_latih[-1]
+    new_sample = np.array([[round(float(latest_entry['nada_ori_latih']), 3), round(float(latest_entry['intonasi_ori_latih']), 3), round(float(latest_entry['volume_ori_latih']), 3)]], dtype=float)
+
+    # Prediksi untuk sampel baru
+    new_predicted_class, new_prediction_values, new_kernel_values, new_calculation_steps = predict_svm_rbf_data_latih(X_train, y_train, new_sample, gamma)
+    new_prediction_result = "Marah" if new_predicted_class[0] == -1 else "Tidak Marah"
+
+    new_kernel_values_display = []
+
+    for (x_train, x_test, kernel_value) in new_kernel_values:
+        formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
+        formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
+        new_kernel_values_display.append(f"Kernel antara [{formatted_x_train}] dan [{formatted_x_test}]: {kernel_value:.3f}")
+
+    # Gabungkan data dengan hasil prediksi untuk ditampilkan
+    new_sample_result = {
+        'nada': round(float(latest_entry['nada_ori_latih']), 3),
+        'intonasi': round(float(latest_entry['intonasi_ori_latih']), 3),
+        'volume': round(float(latest_entry['volume_ori_latih']), 3),
+        'prediction_result': new_prediction_result,
+        'prediction_value': round(new_prediction_values[0], 3)
+    }
+
+    return render_template('hasil_datalatih.html', new_sample_result=new_sample_result, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
 
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
@@ -239,7 +349,7 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Perhitungan SVM RBF
+# Perhitungan SVM RBF Uji
 def rbf_kernel(x, x_prime, gamma):
     distance_squared = np.sum((x - x_prime)**2)
     kernel_value = np.exp(-gamma * distance_squared)
