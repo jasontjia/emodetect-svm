@@ -274,7 +274,7 @@ def hasil_data_latih_():
     for (x_train, x_test, kernel_value) in new_kernel_values:
         formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
         formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
-        new_kernel_values_display.append(f"Kernel antara [{formatted_x_train}] dan [{formatted_x_test}]: {kernel_value:.3f}")
+        new_kernel_values_display.append(f"Kernel antara [{formatted_x_test}] dan [{formatted_x_train}]: {kernel_value:.3f}")
 
     # Gabungkan data dengan hasil prediksi untuk ditampilkan
     new_sample_result = {
@@ -472,7 +472,7 @@ def hasil_single_audio_page():
         for (x_train, x_test, kernel_value) in kernel_values:
             formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
             formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
-            kernel_values_display.append(f"Kernel antara [{formatted_x_train}] dan [{formatted_x_test}]: {kernel_value:.3f}")
+            kernel_values_display.append(f"Kernel antara [{formatted_x_test}] dan [{formatted_x_train}]: {kernel_value:.3f}")
 
         # Simpan nilai prediksi 
         prediction_value_display = f"{prediction_value[0]:.3f}"

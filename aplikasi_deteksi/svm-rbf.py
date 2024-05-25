@@ -62,8 +62,7 @@ y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
 # Prediksi kelas untuk contoh baru
 # Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([[1774.55, 3.387, 0.028],
-                       [1774.55, 3.387, 0.028]])
+new_sample = np.array([[1774.55, 3.387, 0.028]])
 
 # Parameter gamma untuk kernel RBF
 gamma = 0.01
@@ -82,7 +81,7 @@ print("\nNilai kernel RBF per sample uji:")
 for test_index, test_kernels in enumerate(kernel_values):
     print(f"\nSample uji {test_index+1}:")
     for (x_train, x_test, kernel_value) in test_kernels:
-        print(f"  Kernel antara {', '.join(map('{:.3f}'.format, x_train.tolist()))} dan {', '.join(map('{:.3f}'.format, x_test.tolist()))}: {kernel_value:.3f}")
+        print(f"  Kernel antara {', '.join(map('{:.3f}'.format, x_test.tolist()))} dan {', '.join(map('{:.3f}'.format, x_train.tolist()))}: {kernel_value:.3f}")
 
 # Print langkah-langkah perhitungan
 print("\nLangkah-langkah perhitungan:")
