@@ -202,7 +202,6 @@ def hasil_data_latih():
     else:
         return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
 
-
 # Perhitungan SVM RBF Data Latih
 def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
     n_train = len(X_train)
@@ -245,26 +244,26 @@ def hasil_data_latih_():
     if data_latih is None:
         return "Terjadi kesalahan saat mengambil data dari database."
 
-    # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
+    # Ambil sampel terbaru dari database
+    latest_entry = data_latih[-1]
+    new_sample = np.array([[round(float(latest_entry['nada_ori_latih']), 3), round(float(latest_entry['intonasi_ori_latih']), 3), round(float(latest_entry['volume_ori_latih']), 3)]], dtype=float)
+    
+    # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples tanpa sampel terbaru
     angry_samples = np.array([
         [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
-        for entry in data_latih if entry['label_manual_latih'] == 'Marah'
+        for entry in data_latih[:-1] if entry['label_manual_latih'] == 'Marah'
     ], dtype=float)
 
     non_angry_samples = np.array([
         [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
-        for entry in data_latih if entry['label_manual_latih'] == 'Tidak Marah'
+        for entry in data_latih[:-1] if entry['label_manual_latih'] == 'Tidak Marah'
     ], dtype=float)
-    
+
     # Gabungkan kedua set data untuk pelatihan
     X_train = np.vstack((angry_samples, non_angry_samples))
     y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
-    
-    gamma = 0.01
 
-    # Ambil sampel terbaru dari database
-    latest_entry = data_latih[-1]
-    new_sample = np.array([[round(float(latest_entry['nada_ori_latih']), 3), round(float(latest_entry['intonasi_ori_latih']), 3), round(float(latest_entry['volume_ori_latih']), 3)]], dtype=float)
+    gamma = 0.01
 
     # Prediksi untuk sampel baru
     new_predicted_class, new_prediction_values, new_kernel_values, new_calculation_steps = predict_svm_rbf_data_latih(X_train, y_train, new_sample, gamma)
@@ -287,6 +286,7 @@ def hasil_data_latih_():
     }
 
     return render_template('hasil_datalatih.html', new_sample_result=new_sample_result, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
+
 
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
