@@ -287,7 +287,6 @@ def hasil_data_latih_():
 
     return render_template('hasil_datalatih.html', new_sample_result=new_sample_result, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
 
-
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
 def hasil_single_audio():
@@ -480,7 +479,6 @@ def hasil_single_audio_page():
         return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data, prediction_result=prediction_result, kernel_values_display=kernel_values_display, prediction_value_display=prediction_value_display, calculation_steps=calculation_steps)
     
     return "Data tidak lengkap untuk melakukan prediksi."
-
 
 # Form Unggah Uji
 @app.route('/FormUnggahUji', methods=['GET', 'POST'])
