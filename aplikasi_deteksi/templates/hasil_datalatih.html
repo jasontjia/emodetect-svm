@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 
@@ -65,13 +64,15 @@
                         </tr>
                     </thead>
                     <tbody>
+                        {% for result in new_samples_results %}
                         <tr>
-                            <td class="fw-bold">{{ new_sample_result.nada }}</td>
-                            <td class="fw-bold">{{ new_sample_result.intonasi }}</td>
-                            <td class="fw-bold">{{ new_sample_result.volume }}</td>
-                            <td class="fw-bold">{{ new_sample_result.prediction_result }}</td>
-                            <td class="fw-bold">{{ new_sample_result.prediction_value }}</td>
+                            <td class="fw-bold">{{ result.nada }}</td>
+                            <td class="fw-bold">{{ result.intonasi }}</td>
+                            <td class="fw-bold">{{ result.volume }}</td>
+                            <td class="fw-bold">{{ result.prediction_result }}</td>
+                            <td class="fw-bold">{{ result.prediction_value }}</td>
                         </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
             </div>

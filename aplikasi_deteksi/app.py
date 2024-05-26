@@ -54,7 +54,7 @@ def tarik_database():
 
         cursor = connection.cursor(dictionary=True)
 
-        cursor.execute("SELECT nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih FROM audio_latih")
+        cursor.execute("SELECT nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih, label_otomatis_latih FROM audio_latih")
 
         data_latih = cursor.fetchall()
 
@@ -202,7 +202,10 @@ def hasil_data_latih():
     else:
         return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
 
-# Perhitungan SVM RBF Data Latih
+#Perhitungan SVM RBF Latih
+def rbf_kernel(x, y, gamma):
+    return np.exp(-gamma * np.linalg.norm(x - y) ** 2)
+
 def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
     n_train = len(X_train)
     n_test = len(X_test)
@@ -214,7 +217,7 @@ def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
     # Looping untuk setiap sampel di data uji
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan untuk data baru { i+1} :\n "
+        calculation_step = f"Perhitungan untuk data baru {i + 1} :\n "
         # Hitung nilai prediksi untuk sampel uji saat ini
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji
@@ -226,7 +229,7 @@ def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
             if contrib == 0.0:
                 contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
             prediction += contrib
-            calculation_step += f"  Kontribusi dari data latih {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
+            calculation_step += f"  Kontribusi dari data latih {j + 1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
         # Simpan nilai prediksi sebelum mengambil tanda
         prediction_values[i] = prediction
         # Simpan langkah perhitungan
@@ -237,26 +240,28 @@ def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
     
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
-## Hasil Data Latih
+# Hasil Data Latih
 @app.route('/HasilDataLatih')
 def hasil_data_latih_():
     data_latih = tarik_database()
     if data_latih is None:
         return "Terjadi kesalahan saat mengambil data dari database."
 
-    # Ambil sampel terbaru dari database
-    latest_entry = data_latih[-1]
-    new_sample = np.array([[round(float(latest_entry['nada_ori_latih']), 3), round(float(latest_entry['intonasi_ori_latih']), 3), round(float(latest_entry['volume_ori_latih']), 3)]], dtype=float)
-    
-    # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples tanpa sampel terbaru
+    # Ambil sampel terbaru dari database yang belum memiliki label otomatis
+    new_samples = np.array([
+        [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
+        for entry in data_latih if entry['label_otomatis_latih'] == ''
+    ], dtype=float)
+
+    # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
     angry_samples = np.array([
         [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
-        for entry in data_latih[:-1] if entry['label_manual_latih'] == 'Marah'
+        for entry in data_latih if entry['label_manual_latih'] == 'Marah' and entry['label_otomatis_latih'] != ''
     ], dtype=float)
 
     non_angry_samples = np.array([
         [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
-        for entry in data_latih[:-1] if entry['label_manual_latih'] == 'Tidak Marah'
+        for entry in data_latih if entry['label_manual_latih'] == 'Tidak Marah' and entry['label_otomatis_latih'] != ''
     ], dtype=float)
 
     # Gabungkan kedua set data untuk pelatihan
@@ -266,26 +271,26 @@ def hasil_data_latih_():
     gamma = 0.01
 
     # Prediksi untuk sampel baru
-    new_predicted_class, new_prediction_values, new_kernel_values, new_calculation_steps = predict_svm_rbf_data_latih(X_train, y_train, new_sample, gamma)
-    new_prediction_result = "Marah" if new_predicted_class[0] == -1 else "Tidak Marah"
+    new_predicted_classes, new_prediction_values, new_kernel_values, new_calculation_steps = predict_svm_rbf_data_latih(X_train, y_train, new_samples, gamma)
+
+    new_samples_results = []
+    for i, sample in enumerate(new_samples):
+        new_prediction_result = "Marah" if new_predicted_classes[i] == -1 else "Tidak Marah"
+        new_samples_results.append({
+            'nada': sample[0],
+            'intonasi': sample[1],
+            'volume': sample[2],
+            'prediction_result': new_prediction_result,
+            'prediction_value': round(new_prediction_values[i], 3)
+        })
 
     new_kernel_values_display = []
-
     for (x_train, x_test, kernel_value) in new_kernel_values:
         formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
         formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
         new_kernel_values_display.append(f"Kernel antara [{formatted_x_test}] dan [{formatted_x_train}]: {kernel_value:.3f}")
 
-    # Gabungkan data dengan hasil prediksi untuk ditampilkan
-    new_sample_result = {
-        'nada': round(float(latest_entry['nada_ori_latih']), 3),
-        'intonasi': round(float(latest_entry['intonasi_ori_latih']), 3),
-        'volume': round(float(latest_entry['volume_ori_latih']), 3),
-        'prediction_result': new_prediction_result,
-        'prediction_value': round(new_prediction_values[0], 3)
-    }
-
-    return render_template('hasil_datalatih.html', new_sample_result=new_sample_result, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
+    return render_template('hasil_datalatih.html', new_samples_results=new_samples_results, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
 
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
@@ -620,7 +625,6 @@ def form_unggah_latih():
         intonasi = None
         volume = None
         return render_template('form-unggah-latih.html')
-
 
 if __name__ == '__main__':
     app.run(debug=True)
