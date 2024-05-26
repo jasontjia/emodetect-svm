@@ -81,10 +81,10 @@ def simpan_data_ke_database(data):
         # Lakukan loop untuk setiap baris data dan masukkan ke dalam database
         for row in data:
             query = """
-            INSERT INTO audio_latih (nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih, label_otomatis_latih) 
-            VALUES (%s, %s, %s, %s, %s, %s)
+            INSERT INTO audio_latih (nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih) 
+            VALUES (%s, %s, %s, %s, %s)
             """
-            cursor.execute(query, (row['nama_audio_latih'], row['nada_ori_latih'], row['intonasi_ori_latih'], row['volume_ori_latih'], row['label_manual_latih'], row['label_otomatis_latih']))
+            cursor.execute(query, (row['nama_audio_latih'], row['nada_ori_latih'], row['intonasi_ori_latih'], row['volume_ori_latih'], row['label_manual_latih']))
 
         connection.commit()
         cursor.close()
