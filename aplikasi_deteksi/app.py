@@ -93,6 +93,34 @@ def simpan_data_ke_database(data):
         print("Database Error:", e)
         raise
 
+def update_prediction_in_database(nama_audio, label_otomatis):
+    try:
+        connection = mysql.connector.connect(
+            host=db_host,
+            user=db_user,
+            password=db_password,
+            database=db_database
+        )
+        cursor = connection.cursor()
+
+        query = """
+        UPDATE audio_latih
+        SET label_otomatis_latih = %s
+        WHERE nama_audio_latih = %s
+        """
+        cursor.execute(query, (label_otomatis, nama_audio))
+
+        connection.commit()
+        
+    except Exception as e:
+        print("Database Error:", e)
+        raise
+    finally:
+        if cursor:
+            cursor.close()
+        if connection:
+            connection.close()
+
 # Fungsi untuk mengekstrak fitur audio
 def extract_audio_features(audio_file):
     try:
@@ -248,10 +276,18 @@ def hasil_data_latih_():
         return "Terjadi kesalahan saat mengambil data dari database."
 
     # Ambil sampel terbaru dari database yang belum memiliki label otomatis
-    new_samples = np.array([
-        [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
-        for entry in data_latih if entry['label_otomatis_latih'] == ''
-    ], dtype=float)
+    new_samples = []
+    new_samples_audio_names = []
+    for entry in data_latih:
+        if entry['label_otomatis_latih'] == '':
+            new_samples.append([
+                round(float(entry['nada_ori_latih']), 3), 
+                round(float(entry['intonasi_ori_latih']), 3), 
+                round(float(entry['volume_ori_latih']), 3)
+            ])
+            new_samples_audio_names.append(entry['nama_audio_latih'])
+    
+    new_samples = np.array(new_samples, dtype=float)
 
     # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
     angry_samples = np.array([
@@ -283,6 +319,9 @@ def hasil_data_latih_():
             'prediction_result': new_prediction_result,
             'prediction_value': round(new_prediction_values[i], 3)
         })
+        
+        # Simpan hasil prediksi ke database
+        update_prediction_in_database(new_samples_audio_names[i], new_prediction_result)
 
     new_kernel_values_display = []
     for (x_train, x_test, kernel_value) in new_kernel_values:
