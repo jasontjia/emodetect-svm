@@ -56,6 +56,7 @@
                 <table class="table table-bordered">
                     <thead>
                         <tr>
+                            <th class="fw-bold">Nama Audio</th>
                             <th class="fw-bold">Nada</th>
                             <th class="fw-bold">Intonasi</th>
                             <th class="fw-bold">Volume</th>
@@ -67,6 +68,7 @@
                     <tbody>
                         {% for result in new_samples_results %}
                         <tr>
+                            <td class="fw-bold">{{ result.audio_name }}</td>
                             <td class="fw-bold">{{ result.nada }}</td>
                             <td class="fw-bold">{{ result.intonasi }}</td>
                             <td class="fw-bold">{{ result.volume }}</td>

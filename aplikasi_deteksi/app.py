@@ -268,7 +268,7 @@ def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
     
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
-# Hasil Data Latih
+# Hasil Data Latih SVM RBF
 @app.route('/HasilDataLatih')
 def hasil_data_latih_():
     data_latih = tarik_database()
@@ -320,7 +320,8 @@ def hasil_data_latih_():
             'volume': sample[2],
             'prediction_result': new_prediction_result,
             'prediction_value': round(new_prediction_values[i], 3),
-            'manual_label': new_samples_manual_labels[i]
+            'manual_label': new_samples_manual_labels[i],
+            'audio_name': new_samples_audio_names[i]  # Menambahkan nama audio
         })
         
         # Simpan hasil prediksi ke database
