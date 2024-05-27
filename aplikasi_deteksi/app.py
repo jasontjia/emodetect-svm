@@ -278,6 +278,7 @@ def hasil_data_latih_():
     # Ambil sampel terbaru dari database yang belum memiliki label otomatis
     new_samples = []
     new_samples_audio_names = []
+    new_samples_manual_labels = []
     for entry in data_latih:
         if entry['label_otomatis_latih'] == '':
             new_samples.append([
@@ -286,6 +287,7 @@ def hasil_data_latih_():
                 round(float(entry['volume_ori_latih']), 3)
             ])
             new_samples_audio_names.append(entry['nama_audio_latih'])
+            new_samples_manual_labels.append(entry['label_manual_latih'])
     
     new_samples = np.array(new_samples, dtype=float)
 
@@ -317,7 +319,8 @@ def hasil_data_latih_():
             'intonasi': sample[1],
             'volume': sample[2],
             'prediction_result': new_prediction_result,
-            'prediction_value': round(new_prediction_values[i], 3)
+            'prediction_value': round(new_prediction_values[i], 3),
+            'manual_label': new_samples_manual_labels[i]
         })
         
         # Simpan hasil prediksi ke database

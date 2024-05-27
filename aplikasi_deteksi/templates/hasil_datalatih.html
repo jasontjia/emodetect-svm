@@ -59,6 +59,7 @@
                             <th class="fw-bold">Nada</th>
                             <th class="fw-bold">Intonasi</th>
                             <th class="fw-bold">Volume</th>
+                            <th class="fw-bold">Label Manual</th>
                             <th class="fw-bold">Label Otomatis</th>
                             <th class="fw-bold">Nilai Prediksi</th>
                         </tr>
@@ -69,6 +70,7 @@
                             <td class="fw-bold">{{ result.nada }}</td>
                             <td class="fw-bold">{{ result.intonasi }}</td>
                             <td class="fw-bold">{{ result.volume }}</td>
+                            <td class="fw-bold">{{ result.manual_label }}</td>
                             <td class="fw-bold">{{ result.prediction_result }}</td>
                             <td class="fw-bold">{{ result.prediction_value }}</td>
                         </tr>
@@ -95,5 +97,4 @@
     <!-- Core theme JS-->
     <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
 </body>
-
 </html>
