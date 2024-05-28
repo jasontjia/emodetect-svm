@@ -196,6 +196,11 @@ def data_latih():
         return render_template('data_latih.html', data=data, enumerate=enumerate)
     return render_template('data_latih.html')
 
+#Folder Audio Latih
+@app.route('/data uji/audio_ori_uji/<path:filename>')
+def serve_audio(filename):
+    return send_from_directory('data uji/audio_ori_uji', filename)
+
 ## Ekstraksi Audio Data Latih
 def extract_audio_features(audio_file):
     try:

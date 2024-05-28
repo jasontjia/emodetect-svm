@@ -1,31 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <meta name="description" content />
     <meta name="author" content />
     <title>Form Data Latih</title>
-    <!-- Custom Google font-->
     <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='bootstrap.min.css') }}" />
     <link href="{{ url_for('static', filename='images/emotion.png') }}" rel="shortcut icon" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@100;200;300;400;500;600;700;800;900&amp;display=swap" rel="stylesheet" />
-    <!-- Bootstrap icons-->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet" />
-    <!-- Core theme CSS (includes Bootstrap)-->
     <link href="{{ url_for('static', filename='css/styles.css') }}" rel="stylesheet" />
     <style>
-        /* Menyembunyikan tombol Deteksi dan Tampilkan Data secara default */
         #detectButtonContainer,
         #showDataButtonContainer {
             display: none;
         }
     </style>
 </head>
-
 <body class="d-flex flex-column">
     <main class="flex-shrink-0">
         <nav class="navbar navbar-expand-lg navbar-light bg-white py-3">
@@ -51,7 +45,6 @@
                 </div>
             </div>
         </nav>
-        <!-- Page content-->
         <section class="py-5">
             <div class="container px-5">
                 <div class="bg-light rounded-4 py-5 px-4 px-md-5">
@@ -64,9 +57,7 @@
                     <div class="row gx-5 justify-content-center">
                         <div class="col-lg-8 col-xl-6">
                             <form id="uploadForm" action="/DataLatih" method="POST" enctype="multipart/form-data">
-                                <!-- Field Nama File -->
                                 <div class="mb-3" id="fileNameField"></div>
-                                <!-- Submit Button-->
                                 <div class="d-grid">
                                     <label for="fileInput" class="btn btn-primary btn-lg">
                                         Unggah
@@ -74,20 +65,16 @@
                                     </label>
                                 </div>
                                 <br>
-                                <!-- Tombol Tampilkan Data (awalnya disembunyikan) -->
                                 <div class="d-grid" id="showDataButtonContainer">
                                     <button class="btn btn-success btn-lg" id="showDataButton" type="submit">Tampilkan Data</button>
                                 </div>
-                                <!-- Informasi File -->
                                 <div id="fileInfo" class="mb-3"></div>
-                                <!-- Pesan Kesalahan -->
                                 <div class="text-danger" id="errorMessage"></div>
                             </form>
                         </div>
                     </div>
                 </div>
                 <br>
-                <!-- Tabel Data Latih -->
                 <div class="card">
                     <div class="card-header">
                         <i class="fas fa-file me-1"></i>
@@ -100,6 +87,7 @@
                                     <tr>
                                         <th style="text-align: center;">No</th>
                                         <th style="text-align: center;">Nama Audio</th>
+                                        <th style="text-align: center;">Audio</th>
                                         <th style="text-align: center;">Nada Ori</th>
                                         <th style="text-align: center;">Intonasi Ori</th>
                                         <th style="text-align: center;">Volume Ori</th>
@@ -113,6 +101,11 @@
                                             <tr>
                                                 <td style="text-align: center;">{{ i }}</td>
                                                 <td style="text-align: center; font-size: large;">{{ item[0] }}</td>
+                                                <td style="text-align: center;">
+                                                    <audio controls>
+                                                        <source src="{{ url_for('serve_audio', filename=item[0]) }}" type="audio/{{ item[0].split('.')[-1] }}">
+                                                    </audio>
+                                                </td>
                                                 <td style="text-align: center; font-size: large;">{{ item[1] }}</td>
                                                 <td style="text-align: center; font-size: large;">{{ item[2] }}</td>
                                                 <td style="text-align: center; font-size: large;">{{ item[3] }}</td>
@@ -135,16 +128,14 @@
                     </div>
                 </div>
                 <br>
-                <!-- Tombol Deteksi (awalnya disembunyikan) -->
                 <form id="DetectForm" action="/HasilDataLatih" method="POST" enctype="multipart/form-data">
-                <div class="d-grid justify-content-center" id="detectButtonContainer">
-                    <button class="btn btn-danger btn-lg" id="detectButton" type="submit" style="width: 100px;">Deteksi</button>
-                </div>
+                    <div class="d-grid justify-content-center" id="detectButtonContainer">
+                        <button class="btn btn-danger btn-lg" id="detectButton" type="submit" style="width: 100px;">Deteksi</button>
+                    </div>
                 </form>
             </div>
         </section>
     </main>
-    <!-- Footer-->
     <footer class="bg-white py-4 mt-auto" style="bottom: 0; width: 100%">
         <div class="container px-5">
             <div class="row align-items-center justify-content-center">
@@ -157,16 +148,12 @@
         </div>
     </footer>
 </body>
-<!-- Bootstrap core JS-->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.css">
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
 <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.js"></script>
-<!-- Core theme JS-->
 <script src="{{ url_for('static', filename='js/scripts.js') }}"></script>
-<!-- Bagian head dan elemen HTML lainnya -->
 <script>
-    // Ambil elemen yang diperlukan dari HTML
     const fileInput = document.getElementById("fileInput");
     const fileNameField = document.getElementById("fileNameField");
     const detectButton = document.getElementById("detectButton");
@@ -174,10 +161,8 @@
     const errorMessage = document.getElementById("errorMessage");
     const audioTableBody = document.querySelector("#audioTable tbody");
 
-    // Sembunyikan tombol deteksi dan tampilkan data secara default
     showDataButton.style.display = "none";
 
-    // Event listener untuk perubahan pada input file
     fileInput.addEventListener("change", function () {
         const files = this.files;
         fileNameField.innerHTML = "";
@@ -188,14 +173,17 @@
             const fileName = file.name;
             const fileType = file.type;
 
-            // Validasi jenis file dan ukuran
-            const validTypes = ['audio/mpeg', 'audio/wav']; // MIME type untuk MP3 adalah 'audio/mpeg'
+            const validTypes = ['audio/mpeg', 'audio/wav'];
             if (validTypes.includes(fileType) && file.size <= 3 * 1024 * 1024) {
                 validFilesCount++;
                 const row = document.createElement("tr");
+                const audioUrl = URL.createObjectURL(file);
+
                 row.innerHTML = `
                     <td style="text-align: center;">${validFilesCount}</td>
-                    <td style="text-align: center; font-size: large;">${fileName}</td>
+                    <td style="text-align: center; font-size: large;">
+                        <span class="audio-name" data-audio="${audioUrl}">${fileName}</span>
+                    </td>
                     <td style="text-align: center; font-size: large;">-</td>
                     <td style="text-align: center; font-size: large;">-</td>
                     <td style="text-align: center; font-size: large;">-</td>
@@ -216,7 +204,6 @@
             }
         });
 
-        // Tampilkan atau sembunyikan tombol deteksi dan tampilkan data sesuai dengan jumlah file yang valid
         if (validFilesCount > 0) {
             detectButton.style.display = "block";
             showDataButton.style.display = "block";
@@ -226,7 +213,6 @@
         }
     });
 
-    // Event listener untuk tombol Hapus di tabel
     audioTableBody.addEventListener("click", function (event) {
         if (event.target && event.target.classList.contains("delete-button")) {
             const rowIndex = event.target.getAttribute("data-index");
@@ -241,15 +227,12 @@
 
             fileInput.files = dt.files;
 
-            // Hapus baris dari tabel
             event.target.closest("tr").remove();
 
-            // Update nomor urut
             Array.from(audioTableBody.rows).forEach((row, index) => {
                 row.cells[0].innerText = index + 1;
             });
 
-            // Tampilkan atau sembunyikan tombol deteksi dan tampilkan data sesuai dengan jumlah file yang valid
             if (fileInput.files.length > 0) {
                 detectButton.style.display = "block";
                 showDataButton.style.display = "block";
@@ -257,32 +240,34 @@
                 detectButton.style.display = "none";
                 showDataButton.style.display = "none";
             }
+        } else if (event.target && event.target.classList.contains("audio-name")) {
+            const audioUrl = event.target.getAttribute("data-audio");
+            const audio = new Audio(audioUrl);
+            audio.play();
         }
     });
     $(document).ready(function() {
         $('#audioTable').DataTable({
-            "paging": true, // Aktifkan pagination
-            "searching": true, // Aktifkan search bar
-            "ordering": true, // Aktifkan sort
-            "info": true, // Aktifkan informasi jumlah data entries
-            "lengthMenu": [5, 10, 25, 50, 100], // Jumlah data entries yang tersedia
-            "pageLength": 10 // Jumlah data entries default
+            "paging": true,
+            "searching": true,
+            "ordering": true,
+            "info": true,
+            "lengthMenu": [5, 10, 25, 50, 100],
+            "pageLength": 10
         });
     });
 
-    // Event listener untuk tombol Deteksi
     detectButton.addEventListener("click", function (event) {
         event.preventDefault();
 
         const audioData = [];
 
-        // Ambil data dari setiap baris tabel
         Array.from(audioTableBody.rows).forEach(row => {
             const nama_audio_latih = row.cells[1].textContent;
-            const nada_ori_latih = row.cells[2].textContent;
-            const intonasi_ori_latih = row.cells[3].textContent;
-            const volume_ori_latih = row.cells[4].textContent;
-            const label_manual_latih = row.cells[5].querySelector("select").value;
+            const nada_ori_latih = row.cells[3].textContent;
+            const intonasi_ori_latih = row.cells[4].textContent;
+            const volume_ori_latih = row.cells[5].textContent;
+            const label_manual_latih = row.cells[6].querySelector("select").value;
             audioData.push({
                 nama_audio_latih: nama_audio_latih,
                 nada_ori_latih: nada_ori_latih,
@@ -292,7 +277,6 @@
             });
         });
 
-        // Kirim data ke server Flask
         fetch('/HasilDataLatih', {
             method: 'POST',
             headers: {
@@ -307,7 +291,6 @@
             return response.json();
         })
         .then(data => {
-            // Redirect ke halaman HasilDataLatih
             window.location.href = '/HasilDataLatih';
         })
         .catch(error => {
