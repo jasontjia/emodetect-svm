@@ -56,18 +56,20 @@
                 <table class="table table-bordered">
                     <thead>
                         <tr>
+                            <th class="fw-bold">No</th>
                             <th class="fw-bold">Nama Audio</th>
                             <th class="fw-bold">Nada</th>
                             <th class="fw-bold">Intonasi</th>
                             <th class="fw-bold">Volume</th>
                             <th class="fw-bold">Label Manual</th>
                             <th class="fw-bold">Label Otomatis</th>
-                            <th class="fw-bold">Nilai Prediksi</th>
+                            <th class="fw-bold">Nilai Klasifikasi</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for result in new_samples_results %}
                         <tr>
+                            <td class="fw-bold">{{ loop.index }}</td>
                             <td class="fw-bold">{{ result.audio_name }}</td>
                             <td class="fw-bold">{{ result.nada }}</td>
                             <td class="fw-bold">{{ result.intonasi }}</td>
