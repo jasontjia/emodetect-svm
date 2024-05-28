@@ -235,52 +235,44 @@ def hasil_data_latih():
     else:
         return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
 
-#Perhitungan SVM RBF Latih
+## Perhitungan SVM RBF Latih
 def rbf_kernel(x, y, gamma):
     return np.exp(-gamma * np.linalg.norm(x - y) ** 2)
 
-def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma):
+def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma, new_samples_audio_names):
     n_train = len(X_train)
     n_test = len(X_test)
     predictions = np.zeros(n_test)
-    prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
-    kernel_values = []  # List untuk menyimpan nilai kernel RBF
-    calculation_steps = []  # List untuk menyimpan langkah-langkah perhitungan
-    
-    # Looping untuk setiap sampel di data uji
+    prediction_values = np.zeros(n_test)
+    kernel_values = {name: [] for name in new_samples_audio_names}  # Initialize kernel_values as a dictionary
+    calculation_steps = []
+
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan untuk data baru {i + 1} :\n "
-        # Hitung nilai prediksi untuk sampel uji saat ini
+        audio_name = new_samples_audio_names[i]
+        calculation_step = f"Perhitungan untuk data baru {audio_name} :\n"
         for j in range(n_train):
-            # Hitung nilai kernel antara sampel latih dan sampel uji
             kernel_value = rbf_kernel(X_train[j], X_test[i], gamma)
-            # Simpan nilai kernel ke dalam list
-            kernel_values.append((X_train[j], X_test[i], kernel_value))
-            # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+            kernel_values[new_samples_audio_names[i]].append((X_train[j], kernel_value))  # Store kernel values
             contrib = y_train[j] * kernel_value
             if contrib == 0.0:
-                contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
+                contrib = 0.0
             prediction += contrib
             calculation_step += f"  Kontribusi dari data latih {j + 1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
-        # Simpan nilai prediksi sebelum mengambil tanda
         prediction_values[i] = prediction
-        # Simpan langkah perhitungan
         calculation_step += f"  Nilai Klasifikasi : {prediction:.3f}\n"
         calculation_steps.append(calculation_step)
-        # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
         predictions[i] = np.sign(prediction)
-    
+
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
-# Hasil Data Latih SVM RBF
+##Hasil Data Latih SVM RBF
 @app.route('/HasilDataLatih')
 def hasil_data_latih_():
     data_latih = tarik_database()
     if data_latih is None:
         return "Terjadi kesalahan saat mengambil data dari database."
 
-    # Ambil sampel terbaru dari database yang belum memiliki label otomatis
     new_samples = []
     new_samples_audio_names = []
     new_samples_manual_labels = []
@@ -296,7 +288,6 @@ def hasil_data_latih_():
     
     new_samples = np.array(new_samples, dtype=float)
 
-    # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
     angry_samples = np.array([
         [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
         for entry in data_latih if entry['label_manual_latih'] == 'Marah' and entry['label_otomatis_latih'] != ''
@@ -307,14 +298,12 @@ def hasil_data_latih_():
         for entry in data_latih if entry['label_manual_latih'] == 'Tidak Marah' and entry['label_otomatis_latih'] != ''
     ], dtype=float)
 
-    # Gabungkan kedua set data untuk pelatihan
     X_train = np.vstack((angry_samples, non_angry_samples))
     y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
     gamma = 0.01
 
-    # Prediksi untuk sampel baru
-    new_predicted_classes, new_prediction_values, new_kernel_values, new_calculation_steps = predict_svm_rbf_data_latih(X_train, y_train, new_samples, gamma)
+    new_predicted_classes, new_prediction_values, new_kernel_values, new_calculation_steps = predict_svm_rbf_data_latih(X_train, y_train, new_samples, gamma, new_samples_audio_names)
 
     new_samples_results = []
     for i, sample in enumerate(new_samples):
@@ -326,17 +315,16 @@ def hasil_data_latih_():
             'prediction_result': new_prediction_result,
             'prediction_value': round(new_prediction_values[i], 3),
             'manual_label': new_samples_manual_labels[i],
-            'audio_name': new_samples_audio_names[i]  # Menambahkan nama audio
+            'audio_name': new_samples_audio_names[i]
         })
         
-        # Simpan hasil prediksi ke database
         update_prediction_in_database(new_samples_audio_names[i], new_prediction_result)
 
-    new_kernel_values_display = []
-    for (x_train, x_test, kernel_value) in new_kernel_values:
-        formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
-        formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
-        new_kernel_values_display.append(f"Kernel antara [{formatted_x_test}] dan [{formatted_x_train}]: {kernel_value:.3f}")
+    new_kernel_values_display = {
+    name: [f"Kernel antara [{', '.join([f'{value:.3f}' for value in new_samples[new_samples_audio_names.index(name)]])}] dan [{', '.join([f'{value:.3f}' for value in x_train])}]: {kernel_value:.3f}" 
+           for (x_train, kernel_value) in new_kernel_values[name]] 
+    for name in new_samples_audio_names
+    }
 
     return render_template('hasil_datalatih.html', new_samples_results=new_samples_results, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
 

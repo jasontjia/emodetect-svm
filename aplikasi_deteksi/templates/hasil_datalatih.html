@@ -40,9 +40,14 @@
         <hr>
         <div class="container">
             <h4 class="fw-bold text-center">Nilai Kernel RBF Antara Data Baru dan Data Latih:</h4>
-            <div class="mt-4 text-center">
-                {% for kernel_value in new_kernel_values_display %}
-                    <pre class="fw-bold">{{ kernel_value }}</pre>
+            <div class="mt-4">
+                {% for audio_name, kernel_values in new_kernel_values_display.items() %}
+                    <p class="fw-bold text-center">Nilai Kernel RBF {{ audio_name }}</h5>
+                    <div class="text-center">
+                        {% for kernel_value in kernel_values %}
+                            <pre class="fw-bold">{{ kernel_value }}</pre>
+                        {% endfor %}
+                    </div>
                 {% endfor %}
             </div>
             <h4 class="fw-bold text-center">Langkah Perhitungan Klasifikasi:</h4>
@@ -51,7 +56,7 @@
                     <pre class="fw-bold">{{ step }}</pre>
                 {% endfor %}
             </div>
-            <h4 class="fw-bold text-center">Hasil Prediksi untuk Data Baru:</h4>
+            <h4 class="fw-bold text-center">Hasil Klasifikasi untuk Data Baru:</h4>
             <div class="mt-4">
                 <table class="table table-bordered">
                     <thead>
