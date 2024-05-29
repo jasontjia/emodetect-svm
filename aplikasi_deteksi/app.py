@@ -425,7 +425,7 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Perhitungan SVM RBF Uji
+# Perhitungan SVM RBF Data Uji
 def rbf_kernel(x, x_prime, gamma):
     distance_squared = np.sum((x - x_prime)**2)
     kernel_value = np.exp(-gamma * distance_squared)
