@@ -235,7 +235,7 @@ def hasil_data_latih():
     else:
         return jsonify({"error": "Metode yang digunakan tidak valid."}), 405
 
-## Perhitungan SVM RBF Latih
+## Perhitungan SVM RBF Data Latih
 def rbf_kernel(x, y, gamma):
     return np.exp(-gamma * np.linalg.norm(x - y) ** 2)
 
@@ -266,7 +266,6 @@ def predict_svm_rbf_data_latih(X_train, y_train, X_test, gamma, new_samples_audi
 
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
-##Hasil Data Latih SVM RBF
 @app.route('/HasilDataLatih')
 def hasil_data_latih_():
     data_latih = tarik_database()
@@ -320,13 +319,35 @@ def hasil_data_latih_():
         
         update_prediction_in_database(new_samples_audio_names[i], new_prediction_result)
 
+    # Calculate confusion matrix
+    true_labels = [-1 if label == 'Marah' else 1 for label in new_samples_manual_labels]
+    confusion_matrix = np.zeros((2, 2), dtype=int)
+    for true_label, predicted_label in zip(true_labels, new_predicted_classes):
+        if true_label == -1 and predicted_label == -1:
+            confusion_matrix[0, 0] += 1  # True Marah, Predicted Marah
+        elif true_label == -1 and predicted_label == 1:
+            confusion_matrix[0, 1] += 1  # True Marah, Predicted Tidak Marah
+        elif true_label == 1 and predicted_label == -1:
+            confusion_matrix[1, 0] += 1  # True Tidak Marah, Predicted Marah
+        elif true_label == 1 and predicted_label == 1:
+            confusion_matrix[1, 1] += 1  # True Tidak Marah, Predicted Tidak Marah
+
+    # Calculate accuracy
+    accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    accuracy_percentage = "{:.0f}%".format(accuracy * 100)
+
     new_kernel_values_display = {
-    name: [f"Kernel antara [{', '.join([f'{value:.3f}' for value in new_samples[new_samples_audio_names.index(name)]])}] dan [{', '.join([f'{value:.3f}' for value in x_train])}]: {kernel_value:.3f}" 
-           for (x_train, kernel_value) in new_kernel_values[name]] 
-    for name in new_samples_audio_names
+        name: [f"Kernel antara [{', '.join([f'{value:.3f}' for value in new_samples[new_samples_audio_names.index(name)]])}] dan [{', '.join([f'{value:.3f}' for value in x_train])}]: {kernel_value:.3f}" 
+            for (x_train, kernel_value) in new_kernel_values[name]] 
+        for name in new_samples_audio_names
     }
 
-    return render_template('hasil_datalatih.html', new_samples_results=new_samples_results, new_kernel_values_display=new_kernel_values_display, new_calculation_steps=new_calculation_steps)
+    return render_template('hasil_datalatih.html', 
+                        new_samples_results=new_samples_results, 
+                        new_kernel_values_display=new_kernel_values_display, 
+                        new_calculation_steps=new_calculation_steps, 
+                        confusion_matrix=confusion_matrix, 
+                        accuracy_percentage=accuracy_percentage)
 
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])
