@@ -256,18 +256,25 @@
             "pageLength": 10
         });
     });
-
-    detectButton.addEventListener("click", function (event) {
-        event.preventDefault();
-
+    document.getElementById('detectButton').addEventListener('click', function(event) {
+        event.preventDefault(); // Prevent form submission
+    
         const audioData = [];
-
+        let allLabelsSelected = true; // Flag to check if all labels are selected
+    
         Array.from(audioTableBody.rows).forEach(row => {
             const nama_audio_latih = row.cells[1].textContent;
             const nada_ori_latih = row.cells[3].textContent;
             const intonasi_ori_latih = row.cells[4].textContent;
             const volume_ori_latih = row.cells[5].textContent;
-            const label_manual_latih = row.cells[6].querySelector("select").value;
+            const labelSelectElement = row.cells[6].querySelector('select');
+            const label_manual_latih = labelSelectElement.value;
+    
+            // Check if a label is selected
+            if (label_manual_latih === 'Pilih Label') {
+                allLabelsSelected = false;
+            }
+    
             audioData.push({
                 nama_audio_latih: nama_audio_latih,
                 nada_ori_latih: nada_ori_latih,
@@ -276,27 +283,33 @@
                 label_manual_latih: label_manual_latih
             });
         });
-
-        fetch('/HasilDataLatih', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(audioData)
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Gagal menyimpan data ke database.');
-            }
-            return response.json();
-        })
-        .then(data => {
-            window.location.href = '/HasilDataLatih';
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Terjadi kesalahan. Silakan coba lagi.');
-        });
-    });
+    
+        if (allLabelsSelected) {
+            // Proceed with form submission if all labels are selected
+            fetch('/HasilDataLatih', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(audioData)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Gagal menyimpan data ke database.');
+                }
+                return response.json();
+            })
+            .then(data => {
+                window.location.href = '/HasilDataLatih';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            });
+        } else {
+            // Show alert message if not all labels are selected
+            window.alert('Harap pilih semua label manual sebelum melanjutkan.');
+        }
+    });    
 </script>
 </html>

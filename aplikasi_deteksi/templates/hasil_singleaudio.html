@@ -56,17 +56,16 @@
             <p class="fw-bold">Label Manual: {{ session['label_manual'] }}</p>
         </div>
         <hr>
-        <h4 class="text-center">Langkah Perhitungan Klasifikasi:</h4>
-        <hr>
         <div class="text-center">
             <h4>Nilai Kernel RBF Antara Data Baru dan Data Uji:</h4>
-            <ul class="list-unstyled">
+            <ul class="list-unstyled" style="font-weight: 600;">
                 {% for kernel_value in kernel_values_display %}
                 <li>{{ kernel_value }}</li>
                 {% endfor %}
             </ul>
         </div>
         <br>
+        <h4 class="text-center">Langkah Perhitungan Klasifikasi:</h4>
         <div class="text-center">
             <pre>
                 <strong>
