@@ -319,7 +319,7 @@ def hasil_data_latih_():
         
         update_prediction_in_database(new_samples_audio_names[i], new_prediction_result)
 
-    # Calculate confusion matrix
+    # Perhitungan confusion matrix
     true_labels = [-1 if label == 'Marah' else 1 for label in new_samples_manual_labels]
     confusion_matrix = np.zeros((2, 2), dtype=int)
     for true_label, predicted_label in zip(true_labels, new_predicted_classes):
@@ -335,6 +335,18 @@ def hasil_data_latih_():
     # Calculate accuracy
     accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
     accuracy_percentage = "{:.0f}%".format(accuracy * 100)
+    
+    # Calculate overall precision and recall
+    TP = np.diag(confusion_matrix).sum()
+    FP = confusion_matrix.sum(axis=0) - np.diag(confusion_matrix)
+    FN = confusion_matrix.sum(axis=1) - np.diag(confusion_matrix)
+
+    # Overall precision and recall
+    precision = TP / (TP + FP.sum())
+    recall = TP / (TP + FN.sum())
+
+    precision_percentage = "{:.0f}%".format(precision * 100)
+    recall_percentage = "{:.0f}%".format(recall * 100)
 
     new_kernel_values_display = {
         name: [f"Kernel antara [{', '.join([f'{value:.3f}' for value in new_samples[new_samples_audio_names.index(name)]])}] dan [{', '.join([f'{value:.3f}' for value in x_train])}]: {kernel_value:.3f}" 
@@ -347,7 +359,9 @@ def hasil_data_latih_():
                         new_kernel_values_display=new_kernel_values_display, 
                         new_calculation_steps=new_calculation_steps, 
                         confusion_matrix=confusion_matrix, 
-                        accuracy_percentage=accuracy_percentage)
+                        accuracy_percentage=accuracy_percentage,
+                        precision_percentage=precision_percentage,
+                        recall_percentage=recall_percentage)
 
 ## Hasil Single Audio
 @app.route('/HasilSingleAudio', methods=['POST'])

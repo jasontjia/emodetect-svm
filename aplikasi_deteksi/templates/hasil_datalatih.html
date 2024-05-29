@@ -94,7 +94,8 @@
                 <table class="table table-bordered">
                     <thead class="table-primary">
                         <tr>
-                            <th colspan="3" class="text-center">Prediksi</th>
+                            <th></th>
+                            <th colspan="2" class="text-center">Prediksi</th>
                         </tr>
                         <tr>
                             <th>Aktual</th>
@@ -105,17 +106,19 @@
                     <tbody>
                         <tr>
                             <th>True Marah</th>
-                            <td>{{ confusion_matrix[0][0] }} TP</td>
-                            <td>{{ confusion_matrix[0][1] }} FN</td>
+                            <td>TP: {{ confusion_matrix[0][0] }}</td>
+                            <td>FN: {{ confusion_matrix[0][1] }}</td>
                         </tr>
                         <tr>
                             <th>True Tidak Marah</th>
-                            <td>{{ confusion_matrix[1][0] }} FP</td>
-                            <td>{{ confusion_matrix[1][1] }} TN</td>
-                        </tr>                        
+                            <td>FP: {{ confusion_matrix[1][0] }}</td>
+                            <td>TN: {{ confusion_matrix[1][1] }}</td>
+                        </tr>
                     </tbody>
                 </table>
                 <h5 class="fw-bold">Akurasi: {{ accuracy_percentage }}</h5>
+                <h5 class="fw-bold">Presisi: {{ precision_percentage }}</h5>
+                <h5 class="fw-bold">Recall: {{ recall_percentage }}</h5>
             </div>
         </div>
     </main>
