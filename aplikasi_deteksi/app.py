@@ -336,14 +336,23 @@ def hasil_data_latih_():
     accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
     accuracy_percentage = "{:.0f}%".format(accuracy * 100)
     
-    # Calculate overall precision and recall
-    TP = np.diag(confusion_matrix).sum()
+    TP = confusion_matrix[0, 0] + confusion_matrix[1, 1]
     FP = confusion_matrix.sum(axis=0) - np.diag(confusion_matrix)
     FN = confusion_matrix.sum(axis=1) - np.diag(confusion_matrix)
 
-    # Overall precision and recall
-    precision = TP / (TP + FP.sum())
-    recall = TP / (TP + FN.sum())
+    # Precision untuk kelas 'Marah'
+    precision_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[1, 0]) if (confusion_matrix[0, 0] + confusion_matrix[1, 0]) > 0 else 0
+    # Precision untuk kelas 'Tidak Marah'
+    precision_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[0, 1]) if (confusion_matrix[1, 1] + confusion_matrix[0, 1]) > 0 else 0
+
+    # Recall untuk kelas 'Marah'
+    recall_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) if (confusion_matrix[0, 0] + confusion_matrix[0, 1]) > 0 else 0
+    # Recall untuk kelas 'Tidak Marah'
+    recall_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[1, 0]) if (confusion_matrix[1, 1] + confusion_matrix[1, 0]) > 0 else 0
+
+    # Overall precision dan recall
+    precision = (precision_marah + precision_tidak_marah) / 2
+    recall = (recall_marah + recall_tidak_marah) / 2
 
     precision_percentage = "{:.0f}%".format(precision * 100)
     recall_percentage = "{:.0f}%".format(recall * 100)
