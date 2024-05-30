@@ -197,9 +197,9 @@ def data_latih():
     return render_template('data_latih.html')
 
 #Folder Audio Latih
-@app.route('/data_latih/audio_ori_latih/<path:filename>')
+@app.route('/data latih/audio_ori_latih/<path:filename>')
 def serve_audio(filename):
-    return send_from_directory('data_latih/audio_ori_latih', filename)
+    return send_from_directory('data latih/audio_ori_latih', filename)
 
 ## Ekstraksi Audio Data Latih
 def extract_audio_features(audio_file):
