@@ -67,7 +67,7 @@ def tarik_database():
         print("Error:", e)
         return None
     
-# Fungsi untuk menyimpan data training ke database
+# Fungsi untuk menyimpan data latih ke database
 def simpan_data_ke_database(data):
     try:
         connection = mysql.connector.connect(
@@ -197,9 +197,9 @@ def data_latih():
     return render_template('data_latih.html')
 
 #Folder Audio Latih
-@app.route('/data uji/audio_ori_uji/<path:filename>')
+@app.route('/data latih/audio_ori_latih/<path:filename>')
 def serve_audio(filename):
-    return send_from_directory('data uji/audio_ori_uji', filename)
+    return send_from_directory('data latih/audio_ori_latih', filename)
 
 ## Ekstraksi Audio Data Latih
 def extract_audio_features(audio_file):
