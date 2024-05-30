@@ -196,7 +196,6 @@ def data_latih():
         return render_template('data_latih.html', data=data, enumerate=enumerate)
     return render_template('data_latih.html')
 
-#Folder Audio Latih
 @app.route('/data latih/audio_ori_latih/<path:filename>')
 def serve_audio(filename):
     return send_from_directory('data latih/audio_ori_latih', filename)
