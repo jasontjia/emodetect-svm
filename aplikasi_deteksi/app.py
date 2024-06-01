@@ -29,7 +29,7 @@ def get_data_from_database():
 
         cursor = connection.cursor(dictionary=True)
 
-        cursor.execute("SELECT nada_ori, intonasi_ori, volume_ori, label_manual FROM audio_data")
+        cursor.execute("SELECT nada_ori, intonasi_ori, volume_ori, label_manual, label_otomatis FROM audio_data")
 
         data = cursor.fetchall()
 
@@ -473,6 +473,30 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
+## Hitung Confusion Matrix, Akurasi, Presisi, Recall Single Audio
+def hitung_metrik(true_labels, predicted_labels):
+    confusion_matrix = np.zeros((2, 2), dtype=int)
+    for true_label, predicted_label in zip(true_labels, predicted_labels):
+        if true_label == -1 and predicted_label == -1:
+            confusion_matrix[0, 0] += 1  # True Marah, Predicted Marah
+        elif true_label == -1 and predicted_label == 1:
+            confusion_matrix[0, 1] += 1  # True Marah, Predicted Tidak Marah
+        elif true_label == 1 and predicted_label == -1:
+            confusion_matrix[1, 0] += 1  # True Tidak Marah, Predicted Marah
+        elif true_label == 1 and predicted_label == 1:
+            confusion_matrix[1, 1] += 1  # True Tidak Marah, Predicted Tidak Marah
+
+    akurasi = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    presisi_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[1, 0]) if (confusion_matrix[0, 0] + confusion_matrix[1, 0]) > 0 else 0
+    presisi_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[0, 1]) if (confusion_matrix[1, 1] + confusion_matrix[0, 1]) > 0 else 0
+    recall_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) if (confusion_matrix[0, 0] + confusion_matrix[0, 1]) > 0 else 0
+    recall_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[1, 0]) if (confusion_matrix[1, 1] + confusion_matrix[1, 0]) > 0 else 0
+
+    presisi = (presisi_marah + presisi_tidak_marah) / 2
+    recall = (recall_marah + recall_tidak_marah) / 2
+
+    return confusion_matrix, akurasi, presisi, recall
+
 ## Hasil Single Audio 
 @app.route('/HasilSingleAudio')
 def hasil_single_audio_page():
@@ -487,12 +511,10 @@ def hasil_single_audio_page():
     label_manual = session.get('label_manual')
 
     if nada is not None and intonasi is not None and volume is not None:
-        # Konversi nilai menjadi float dan membulatkannya menjadi 3 angka di belakang koma
         nada = round(float(nada), 3)
         intonasi = round(float(intonasi), 3)
         volume = round(float(volume), 3)
 
-        # Pisahkan data dari database ke dalam angry_samples dan non_angry_samples
         angry_samples = np.array([
             [round(float(entry['nada_ori']), 3), round(float(entry['intonasi_ori']), 3), round(float(entry['volume_ori']), 3)]
             for entry in data if entry['label_manual'] == 'Marah'
@@ -503,21 +525,17 @@ def hasil_single_audio_page():
             for entry in data if entry['label_manual'] == 'Tidak Marah'
         ], dtype=float)
         
-        # Exclude the labeled sample from the training data if it exists
         if label_manual == 'Marah':
             angry_samples = angry_samples[:-1] if len(angry_samples) > 0 else angry_samples
         elif label_manual == 'Tidak Marah':
             non_angry_samples = non_angry_samples[:-1] if len(non_angry_samples) > 0 else non_angry_samples
         
-        # Gabungkan kedua set data untuk pelatihan
         X_train = np.vstack((angry_samples, non_angry_samples))
         y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
-        # Contoh baru (sampel baru)
         new_sample = np.array([[nada, intonasi, volume]], dtype=float)
         gamma = 0.01
 
-        # Lakukan prediksi menggunakan SVM dengan kernel RBF
         predicted_class, prediction_value, kernel_values, calculation_steps = predict_svm_rbf(X_train, y_train, new_sample, gamma)
 
         if predicted_class[0] == -1:
@@ -525,7 +543,6 @@ def hasil_single_audio_page():
         else:
             prediction_result = "Tidak Marah"
 
-        # Simpan hasil prediksi ke database
         try:
             connection = mysql.connector.connect(
                 host=db_host,
@@ -547,20 +564,48 @@ def hasil_single_audio_page():
 
         except Exception as e:
             print("Error updating data in database:", e)
-            return "Error occurred while updating the database. Please try again later."
+            return "Terjadi kesalahan saat memperbarui database. Silakan coba lagi nanti."
 
-        kernel_values_display = []  # List untuk menyimpan nilai kernel RBF
+        kernel_values_display = []
 
-        # Loop untuk menambahkan nilai kernel RBF ke dalam list kernel_values_display
         for (x_train, x_test, kernel_value) in kernel_values:
             formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
             formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
             kernel_values_display.append(f"Kernel antara [{formatted_x_test}] dan [{formatted_x_train}]: {kernel_value:.3f}")
 
-        # Simpan nilai prediksi 
         prediction_value_display = f"{prediction_value[0]:.3f}"
         
-        return render_template('hasil_singleaudio.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name, data=data, prediction_result=prediction_result, kernel_values_display=kernel_values_display, prediction_value_display=prediction_value_display, calculation_steps=calculation_steps)
+        # Hitung metrik menggunakan data historis
+        true_labels = []
+        predicted_labels = []
+        for entry in data:
+            if entry['label_otomatis']:
+                true_labels.append(-1 if entry['label_manual'] == 'Marah' else 1)
+                predicted_labels.append(-1 if entry['label_otomatis'] == 'Marah' else 1)
+        
+        # Tambahkan data baru ke dalam perhitungan metrik
+        true_labels.append(-1 if label_manual == 'Marah' else 1)
+        predicted_labels.append(predicted_class[0])
+
+        confusion_matrix, akurasi, presisi, recall = hitung_metrik(true_labels, predicted_labels)
+        akurasi_persen = "{:.0f}%".format(akurasi * 100)
+        presisi_persen = "{:.0f}%".format(presisi * 100)
+        recall_persen = "{:.0f}%".format(recall * 100)
+        
+        return render_template('hasil_singleaudio.html', 
+                               nada=nada, 
+                               intonasi=intonasi, 
+                               volume=volume, 
+                               file_name=file_name, 
+                               data=data, 
+                               prediction_result=prediction_result, 
+                               kernel_values_display=kernel_values_display, 
+                               prediction_value_display=prediction_value_display, 
+                               calculation_steps=calculation_steps,
+                               confusion_matrix=confusion_matrix,
+                               akurasi_persen=akurasi_persen,
+                               presisi_persen=presisi_persen,
+                               recall_persen=recall_persen)
     
     return "Data tidak lengkap untuk melakukan prediksi."
 

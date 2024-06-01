@@ -76,6 +76,39 @@
             </pre>
         </div>
         <h4 class="text-center">Hasil Emosi: {{ prediction_result }}</h4>
+        <br>
+        <hr>
+        <h4 class="fw-bold text-center">Confusion Matrix dan Akurasi</h4>
+        <div class="mt-4 text-center">
+            <table class="table table-bordered">
+                <thead class="table-primary">
+                    <tr>
+                        <th></th>
+                        <th colspan="2" class="text-center">Prediksi</th>
+                    </tr>
+                    <tr>
+                        <th>Aktual</th>
+                        <th>Predicted Marah</th>
+                        <th>Predicted Tidak Marah</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <th>True Marah</th>
+                        <td>TP: {{ confusion_matrix[0][0] }}</td>
+                        <td>FN: {{ confusion_matrix[0][1] }}</td>
+                    </tr>
+                    <tr>
+                        <th>True Tidak Marah</th>
+                        <td>FP: {{ confusion_matrix[1][0] }}</td>
+                        <td>TN: {{ confusion_matrix[1][1] }}</td>
+                    </tr>
+                </tbody>
+            </table>
+            <!-- Metrics -->
+            <h5 class="fw-bold">Akurasi: {{ akurasi_persen }}</h5>
+            <h5 class="fw-bold">Presisi: {{ presisi_persen }}</h5>
+            <h5 class="fw-bold">Recall: {{ recall_persen }}</h5>
     </div>
 </main>
 <footer class="bg-white py-4 mt-auto" style="bottom: 0; width: 100%">
