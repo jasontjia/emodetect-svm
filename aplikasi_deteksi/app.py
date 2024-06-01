@@ -356,6 +356,24 @@ def hasil_data_latih_():
     precision_percentage = "{:.0f}%".format(precision * 100)
     recall_percentage = "{:.0f}%".format(recall * 100)
 
+    # Perhitungan confusion matrix dan metrik dari seluruh data (historis dan baru)
+    true_labels = []
+    predicted_labels = []
+    for entry in data_latih:
+        if entry['label_otomatis_latih']:
+            true_labels.append(-1 if entry['label_manual_latih'] == 'Marah' else 1)
+            predicted_labels.append(-1 if entry['label_otomatis_latih'] == 'Marah' else 1)
+
+    # Tambahkan data baru ke dalam perhitungan metrik
+    for i in range(len(new_samples)):
+        true_labels.append(-1 if new_samples_manual_labels[i] == 'Marah' else 1)
+        predicted_labels.append(new_predicted_classes[i])
+
+    confusion_matrix, akurasi, presisi, recall = hitung_metrik(true_labels, predicted_labels)
+    accuracy_percentage = "{:.0f}%".format(akurasi * 100)
+    precision_percentage = "{:.0f}%".format(presisi * 100)
+    recall_percentage = "{:.0f}%".format(recall * 100)
+
     new_kernel_values_display = {
         name: [f"Kernel antara [{', '.join([f'{value:.3f}' for value in new_samples[new_samples_audio_names.index(name)]])}] dan [{', '.join([f'{value:.3f}' for value in x_train])}]: {kernel_value:.3f}" 
             for (x_train, kernel_value) in new_kernel_values[name]] 
@@ -473,7 +491,7 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
-## Hitung Confusion Matrix, Akurasi, Presisi, Recall Single Audio
+## Hitung Confusion Matrix, Akurasi, Presisi, Recall Single Audio Single Audio
 def hitung_metrik(true_labels, predicted_labels):
     confusion_matrix = np.zeros((2, 2), dtype=int)
     for true_label, predicted_label in zip(true_labels, predicted_labels):
