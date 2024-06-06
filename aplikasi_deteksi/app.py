@@ -451,7 +451,7 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Perhitungan SVM RBF Data Uji
+# Perhitungan SVM RBF Single Audio
 def rbf_kernel(x, x_prime, gamma):
     distance_squared = np.sum((x - x_prime)**2)
     kernel_value = np.exp(-gamma * distance_squared)
@@ -465,10 +465,10 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     kernel_values = []  # List untuk menyimpan nilai kernel RBF
     calculation_steps = []  # List untuk menyimpan langkah-langkah perhitungan
     
-    # Looping untuk setiap sampel di data uji
+    # Looping untuk setiap sampel di Single Audio
     for i in range(n_test):
         prediction = 0
-        calculation_step = f"Perhitungan untuk data baru:\n"
+        calculation_step = f"Perhitungan untuk data uji baru:\n"
         # Hitung nilai prediksi untuk sampel uji saat ini
         for j in range(n_train):
             # Hitung nilai kernel antara sampel latih dan sampel uji

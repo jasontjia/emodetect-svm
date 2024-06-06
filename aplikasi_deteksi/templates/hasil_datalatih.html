@@ -41,7 +41,7 @@
         <h3 class="fw-bold text-center">Hasil Pendeteksian Emosi (Data Latih)</h3>
         <hr>
         <div class="container">
-            <h4 class="fw-bold text-center">Nilai Kernel RBF Antara Data Baru dan Data Latih:</h4>
+            <h4 class="fw-bold text-center">Nilai Kernel RBF Antara Data Latih Baru dan Data Latih:</h4>
             <div class="mt-4">
                 {% for audio_name, kernel_values in new_kernel_values_display.items() %}
                     <p class="fw-bold text-center">Nilai Kernel RBF {{ audio_name }}</p>
@@ -58,7 +58,7 @@
                     <pre class="fw-bold">{{ step }}</pre>
                 {% endfor %}
             </div>
-            <h4 class="fw-bold text-center">Hasil Klasifikasi untuk Data Baru:</h4>
+            <h4 class="fw-bold text-center">Hasil Klasifikasi untuk Data Latih Baru:</h4>
             <div class="mt-4">
                 <table id="resultsTable" class="table table-bordered">
                     <thead class="table-primary">
