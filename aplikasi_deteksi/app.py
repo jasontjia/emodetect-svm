@@ -93,6 +93,7 @@ def simpan_data_ke_database(data):
         print("Database Error:", e)
         raise
 
+# Fungsi Update Data Latih
 def update_prediction_in_database(nama_audio, label_otomatis):
     try:
         connection = mysql.connector.connect(
@@ -451,7 +452,7 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Perhitungan SVM RBF Single Audiog
+# Perhitungan SVM RBF Single Audio
 def rbf_kernel(x, x_prime, gamma):
     distance_squared = np.sum((x - x_prime)**2)
     kernel_value = np.exp(-gamma * distance_squared)
