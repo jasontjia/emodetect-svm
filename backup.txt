@@ -1379,3 +1379,759 @@ def hasil_data_latih_():
                            new_kernel_values_display=new_kernel_values_display, 
                            new_calculation_steps=new_calculation_steps,
                            classification_evaluation=classification_evaluation)
+
+from flask import Flask, render_template, redirect, request, jsonify, send_from_directory, session
+from werkzeug.utils import secure_filename
+import mysql.connector
+import librosa
+import numpy as np
+import os
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key_here'
+
+class AudioDataManager:
+    def __init__(self, db_host, db_user, db_password, db_database, audio_file):
+        self.db_host = db_host
+        self.db_user = db_user
+        self.db_password = db_password
+        self.db_database = db_database
+        self.audio_file = audio_file
+        self.audio_ori_uji_folder = 'data uji/audio_ori_uji'
+        self.marah_uji_folder = 'data uji/marah_uji'
+        self.tidakmarah_uji_folder = 'data uji/tidakmarah_uji'
+        self.audio_ori_latih_folder = 'data latih/audio_ori_latih'
+        
+    def save_temp_file(self, temp_file_path):
+        self.audio_file.save(temp_file_path)
+    
+class DatabaseManager:
+    def __init__(self):
+        self.connection = mysql.connector.connect(
+                host=db_host,
+                user=db_user,
+                password=db_password,
+                database=db_database
+            )
+        self.cursor = self.connection.cursor()
+
+    def close(self):
+        self.cursor.close()
+        self.connection.close()
+
+    def connect_to_database(self):
+        self.connection = mysql.connector.connect(
+            host=self.db_host,
+            user=self.db_user,
+            password=self.db_password,
+            database=self.db_database
+        )
+        self.cursor = self.connection.cursor(dictionary=True)
+
+    def disconnect_from_database(self):
+        if self.connection.is_connected():
+            self.cursor.close()
+            self.connection.close()
+
+    def extract_audio_features(self, audio_file):
+        try:
+            y, sr = librosa.load(audio_file)
+            pitch, _ = librosa.core.piptrack(y=y, sr=sr)
+            pitch_values = pitch[pitch > 0]
+            median_pitch = round(float(np.median(pitch_values)), 3)
+            pitch_diff = np.diff(pitch_values)
+            intonation = round(float(np.mean(np.abs(pitch_diff))), 3) if len(pitch_diff) > 0 else 0.000
+            rms = round(float(np.sqrt(np.mean(y**2))), 3)
+            return median_pitch, intonation, rms
+        except Exception as e:
+            print("Error extracting audio features:", e)
+            return None, None, None
+
+    def save_data_to_database(self, data):
+        try:
+            self.connect_to_database()
+            query = """
+            INSERT INTO audio_latih (nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih) 
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            for row in data:
+                self.cursor.execute(query, (row['nama_audio_latih'], row['nada_ori_latih'], row['intonasi_ori_latih'], row['volume_ori_latih'], row['label_manual_latih']))
+            self.connection.commit()
+        except mysql.connector.Error as err:
+            print("Database Error:", err)
+            raise
+        finally:
+            self.disconnect_from_database()
+
+    def insert_audio_data(self, file_name, nada, intonasi, volume, label_manual):
+        try:
+            self.connect_to_database()
+            query = """
+            INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori, label_manual) 
+            VALUES (%s, %s, %s, %s, %s)
+            """
+            self.cursor.execute(query, (file_name, nada, intonasi, volume, label_manual))
+            self.connection.commit()
+        except mysql.connector.Error as err:
+            print("Database Error:", err)
+            raise
+        finally:
+            self.disconnect_from_database()
+            
+    def update_audio_data(self, file_name, prediction_result):
+        self.cursor.execute(
+            "UPDATE audio_data SET label_otomatis=%s WHERE nama_audio=%s",
+            (prediction_result, file_name)
+        )
+        self.connection.commit()
+
+    def serve_audio(self, folder, filename):
+        if folder == 'audio_ori_uji':
+            directory = self.audio_ori_uji_folder
+        elif folder == 'marah_uji':
+            directory = self.marah_uji_folder
+        elif folder == 'tidakmarah_uji':
+            directory = self.tidakmarah_uji_folder
+        else:
+            return "Invalid folder", 404
+        return send_from_directory(directory, filename)
+
+    def tarik_database(self):
+        try:
+            self.connect_to_database()
+            self.cursor.execute("SELECT nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih, label_otomatis_latih FROM audio_latih")
+            data_latih = self.cursor.fetchall()
+            return data_latih
+        except Exception as e:
+            print("Error:", e)
+            return None
+        finally:
+            self.disconnect_from_database()
+
+class SVMRBF:
+    def __init__(self, gamma):
+        self.gamma = gamma
+
+    def rbf_kernel(self, x, y):
+        return np.exp(-self.gamma * np.linalg.norm(x - y) ** 2)
+
+    def predict(self, X_train, y_train, X_test, new_samples_audio_names):
+        n_train = len(X_train)
+        n_test = len(X_test)
+        predictions = np.zeros(n_test)
+        prediction_values = np.zeros(n_test)
+        kernel_values = {name: [] for name in new_samples_audio_names}
+        calculation_steps = []
+
+        for i in range(n_test):
+            prediction = 0
+            audio_name = new_samples_audio_names[i]
+            calculation_step = f"Perhitungan untuk data baru {audio_name} :\n"
+            for j in range(n_train):
+                kernel_value = self.rbf_kernel(X_train[j], X_test[i])
+                kernel_values[new_samples_audio_names[i]].append((X_train[j], kernel_value))
+                contrib = y_train[j] * kernel_value
+                if contrib == 0.0:
+                    contrib = 0.0
+                prediction += contrib
+                calculation_step += f"  Kontribusi dari data latih {j + 1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
+            prediction_values[i] = prediction
+            calculation_step += f"  Nilai Klasifikasi : {prediction:.3f}\n"
+            calculation_steps.append(calculation_step)
+            predictions[i] = np.sign(prediction)
+
+        return predictions.astype(int), prediction_values, kernel_values, calculation_steps
+
+def hitung_metrik(true_labels, predicted_labels):
+    confusion_matrix = np.zeros((2, 2), dtype=int)
+    for true_label, predicted_label in zip(true_labels, predicted_labels):
+        if true_label == -1 and predicted_label == -1:
+            confusion_matrix[0, 0] += 1
+        elif true_label == -1 and predicted_label == 1:
+            confusion_matrix[0, 1] += 1
+        elif true_label == 1 and predicted_label == -1:
+            confusion_matrix[1, 0] += 1
+        elif true_label == 1 and predicted_label == 1:
+            confusion_matrix[1, 1] += 1
+
+    accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    precision_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[1, 0]) if (confusion_matrix[0, 0] + confusion_matrix[1, 0]) > 0 else 0
+    precision_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[0, 1]) if (confusion_matrix[1, 1] + confusion_matrix[0, 1]) > 0 else 0
+    recall_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) if (confusion_matrix[0, 0] + confusion_matrix[0, 1]) > 0 else 0
+    recall_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[1, 0]) if (confusion_matrix[1, 1] + confusion_matrix[1, 0]) > 0 else 0
+
+    precision = (precision_marah + precision_tidak_marah) / 2
+    recall = (recall_marah + recall_tidak_marah) / 2
+
+    return confusion_matrix, accuracy, precision, recall
+
+# Konfigurasi koneksi ke database
+db_host = 'localhost'
+db_user = 'root'
+db_password = ''
+db_database = 'audio'
+
+# Buat instance dari kelas AudioDataManager
+audio_manager = AudioDataManager(db_host, db_user, db_password, db_database, audio_file)
+svm_rbf = SVMRBF(gamma=0.01)
+
+@app.route('/audio/<folder>/<path:filename>')
+def download_file(folder, filename):
+    return audio_manager.serve_audio(folder, filename)
+
+@app.route('/')
+def index():
+    return redirect('/Beranda')
+
+@app.route('/Beranda')
+def beranda():
+    return render_template('index.html')
+
+@app.route('/SingleAudio')
+def single_audio():
+    return render_template('single_audio.html')
+
+@app.route('/DataLatih', methods=['GET', 'POST'])
+def data_latih():
+    if request.method == 'POST':
+        audio_files = request.files.getlist('audioFiles')
+        label_manual_latih = request.form.getlist('label_manual_latih')
+
+        data = []
+        for audio_file, label_manual in zip(audio_files, label_manual_latih):
+            if audio_file and label_manual:
+                file_path = os.path.join(audio_manager.audio_ori_latih_folder, audio_file.filename)
+                audio_file.save(file_path)
+                nada, intonasi, volume = audio_manager.extract_audio_features(file_path)
+                if nada is not None and intonasi is not None and volume is not None:
+                    data.append({
+                        'nama_audio_latih': audio_file.filename,
+                        'nada_ori_latih': nada,
+                        'intonasi_ori_latih': intonasi,
+                        'volume_ori_latih': volume,
+                        'label_manual_latih': label_manual
+                    })
+
+        try:
+            audio_manager.save_data_to_database(data)
+            return redirect('/DataLatih')
+        except Exception as e:
+            return f"Terjadi kesalahan: {e}"
+
+    data_latih = audio_manager.tarik_database()
+    if data_latih is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    return render_template('data_latih.html', data=data_latih, enumerate=enumerate)
+
+@app.route('/data latih/audio_ori_latih/<path:filename>')
+def serve_audio(filename):
+    return send_from_directory(audio_manager.audio_ori_latih_folder, filename)
+
+@app.route('/HasilDataLatih', methods=['GET', 'POST'])
+def hasil_data_latih():
+    data_latih = audio_manager.tarik_database()
+    if data_latih is None:
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    new_samples = []
+    new_samples_audio_names = []
+    new_samples_manual_labels = []
+    for entry in data_latih:
+        if entry['label_otomatis_latih'] == '':
+            new_samples.append([
+                round(float(entry['nada_ori_latih']), 3), 
+                round(float(entry['intonasi_ori_latih']), 3), 
+                round(float(entry['volume_ori_latih']), 3)
+            ])
+            new_samples_audio_names.append(entry['nama_audio_latih'])
+            new_samples_manual_labels.append(entry['label_manual_latih'])
+    
+    new_samples = np.array(new_samples, dtype=float)
+
+    angry_samples = np.array([
+        [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
+        for entry in data_latih if entry['label_manual_latih'] == 'Marah' and entry['label_otomatis_latih'] != ''
+    ], dtype=float)
+
+    non_angry_samples = np.array([
+        [round(float(entry['nada_ori_latih']), 3), round(float(entry['intonasi_ori_latih']), 3), round(float(entry['volume_ori_latih']), 3)]
+        for entry in data_latih if entry['label_manual_latih'] == 'Tidak Marah' and entry['label_otomatis_latih'] != ''
+    ], dtype=float)
+
+    X_train = np.vstack((angry_samples, non_angry_samples))
+    y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+    new_predicted_classes, new_prediction_values, new_kernel_values, new_calculation_steps = svm_rbf.predict(X_train, y_train, new_samples, new_samples_audio_names)
+
+    new_samples_results = []
+    for i, sample in enumerate(new_samples):
+        new_prediction_result = "Marah" if new_predicted_classes[i] == -1 else "Tidak Marah"
+        new_samples_results.append({
+            'nada': sample[0],
+            'intonasi': sample[1],
+            'volume': sample[2],
+            'prediction_result': new_prediction_result,
+            'prediction_value': round(new_prediction_values[i], 3),
+            'manual_label': new_samples_manual_labels[i],
+            'audio_name': new_samples_audio_names[i]
+        })
+        
+        audio_manager.update_prediction(new_samples_audio_names[i], new_prediction_result)
+
+    true_labels = [-1 if label == 'Marah' else 1 for label in new_samples_manual_labels]
+    confusion_matrix = np.zeros((2, 2), dtype=int)
+    for true_label, predicted_label in zip(true_labels, new_predicted_classes):
+        if true_label == -1 and predicted_label == -1:
+            confusion_matrix[0, 0] += 1
+        elif true_label == -1 and predicted_label == 1:
+            confusion_matrix[0, 1] += 1
+        elif true_label == 1 and predicted_label == -1:
+            confusion_matrix[1, 0] += 1
+        elif true_label == 1 and predicted_label == 1:
+            confusion_matrix[1, 1] += 1
+
+    accuracy = np.sum(np.diag(confusion_matrix)) / np.sum(confusion_matrix)
+    accuracy_percentage = "{:.0f}%".format(accuracy * 100)
+    
+    precision_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[1, 0]) if (confusion_matrix[0, 0] + confusion_matrix[1, 0]) > 0 else 0
+    precision_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[0, 1]) if (confusion_matrix[1, 1] + confusion_matrix[0, 1]) > 0 else 0
+    recall_marah = confusion_matrix[0, 0] / (confusion_matrix[0, 0] + confusion_matrix[0, 1]) if (confusion_matrix[0, 0] + confusion_matrix[0, 1]) > 0 else 0
+    recall_tidak_marah = confusion_matrix[1, 1] / (confusion_matrix[1, 1] + confusion_matrix[1, 0]) if (confusion_matrix[1, 1] + confusion_matrix[1, 0]) > 0 else 0
+
+    precision = (precision_marah + precision_tidak_marah) / 2
+    recall = (recall_marah + recall_tidak_marah) / 2
+
+    precision_percentage = "{:.0f}%".format(precision * 100)
+    recall_percentage = "{:.0f}%".format(recall * 100)
+
+    true_labels = []
+    predicted_labels = []
+    for entry in data_latih:
+        if entry['label_otomatis_latih']:
+            true_labels.append(-1 if entry['label_manual_latih'] == 'Marah' else 1)
+            predicted_labels.append(-1 if entry['label_otomatis_latih'] == 'Marah' else 1)
+
+    for i in range(len(new_samples)):
+        true_labels.append(-1 if new_samples_manual_labels[i] == 'Marah' else 1)
+        predicted_labels.append(new_predicted_classes[i])
+
+    confusion_matrix, akurasi, presisi, recall = hitung_metrik(true_labels, predicted_labels)
+    accuracy_percentage = "{:.0f}%".format(akurasi * 100)
+    precision_percentage = "{:.0f}%".format(presisi * 100)
+    recall_percentage = "{:.0f}%".format(recall * 100)
+
+    new_kernel_values_display = {
+        name: [f"Kernel antara [{', '.join([f'{value:.3f}' for value in new_samples[new_samples_audio_names.index(name)]])}] dan [{', '.join([f'{value:.3f}' for value in x_train])}]: {kernel_value:.3f}" 
+            for (x_train, kernel_value) in new_kernel_values[name]] 
+        for name in new_samples_audio_names
+    }
+
+    return render_template('hasil_datalatih.html', 
+                        new_samples_results=new_samples_results, 
+                        new_kernel_values_display=new_kernel_values_display, 
+                        new_calculation_steps=new_calculation_steps, 
+                        confusion_matrix=confusion_matrix, 
+                        accuracy_percentage=accuracy_percentage,
+                        precision_percentage=precision_percentage,
+                        recall_percentage=recall_percentage)
+
+@app.route('/HasilSingleAudio', methods=['POST'])
+def hasil_single_audio():
+    if 'file' not in request.files or 'label_manual' not in request.form:
+        return redirect('/SingleAudio')
+
+    audio_file = request.files['file']
+    label_manual = request.form['label_manual']
+
+    if audio_file.filename == '':
+        return redirect('/SingleAudio')
+
+    file_name = secure_filename(audio_file.filename)
+
+    temp_file_path = os.path.join('temp_audio', file_name)
+    audio_file.save(temp_file_path)
+
+    nada, intonasi, volume = audio_manager.extract_audio_features(temp_file_path)
+
+    os.remove(temp_file_path)
+
+    if nada is not None and intonasi is not None and volume is not None and label_manual:
+        try:
+            audio_manager.insert_audio_data(file_name, nada, intonasi, volume, label_manual)
+            session['nada'] = nada
+            session['intonasi'] = intonasi
+            session['volume'] = volume
+            session['file_name'] = file_name
+            session['label_manual'] = label_manual
+            return redirect('/HasilSingleAudio')
+        except Exception as e:
+            print("Error inserting data into database:", e)
+            return "Error occurred. Please try again later."
+    else:
+        return "Error extracting audio features. Please try again with a different file."
+
+class SVMRBF:
+    def __init__(self, gamma):
+        self.gamma = gamma
+        self.kernel_values = []
+        self.calculation_steps = []
+
+    def rbf_kernel(self, x, x_prime):
+        distance_squared = np.sum((x - x_prime)**2)
+        kernel_value = np.exp(-self.gamma * distance_squared)
+        return kernel_value
+
+    def predict(self, X_train, y_train, X_test):
+        n_train = len(X_train)
+        n_test = len(X_test)
+        predictions = np.zeros(n_test)
+        prediction_values = np.zeros(n_test)  # Array untuk menyimpan nilai prediksi sebelum mengambil tanda
+        
+        self.kernel_values = []  # Reset kernel values for new prediction
+        self.calculation_steps = []  # Reset calculation steps for new prediction
+
+        # Looping untuk setiap sampel di Single Audio
+        for i in range(n_test):
+            prediction = 0
+            calculation_step = f"Perhitungan untuk data uji baru:\n"
+            # Hitung nilai prediksi untuk sampel uji saat ini
+            for j in range(n_train):
+                # Hitung nilai kernel antara sampel latih dan sampel uji
+                kernel_value = self.rbf_kernel(X_train[j], X_test[i])
+                # Simpan nilai kernel ke dalam list
+                self.kernel_values.append((X_train[j], X_test[i], kernel_value))
+                # Hitung nilai prediksi dengan menambahkan kontribusi dari setiap sampel latih
+                contrib = y_train[j] * kernel_value
+                if contrib == 0.0:
+                    contrib = 0.0  # Pastikan nilai kontribusi adalah 0.0 dan tidak dianggap negatif
+                prediction += contrib
+                calculation_step += f"  Kontribusi dari data uji {j+1}: y_train={y_train[j]}, kernel={kernel_value:.3f}, kontribusi={contrib:.3f}\n"
+            # Simpan nilai prediksi sebelum mengambil tanda
+            prediction_values[i] = prediction
+            # Simpan langkah perhitungan
+            calculation_step += f"  Nilai Klasifikasi : {prediction:.3f}\n"
+            self.calculation_steps.append(calculation_step)
+            # Tentukan kelas prediksi berdasarkan tanda dari prediksi akhir
+            predictions[i] = np.sign(prediction)
+        
+        return predictions.astype(int), prediction_values, self.kernel_values, self.calculation_steps
+
+class Metrics:
+    def __init__(self, true_labels, predicted_labels):
+        self.true_labels = true_labels
+        self.predicted_labels = predicted_labels
+        self.confusion_matrix = self._compute_confusion_matrix()
+        self.accuracy = self._compute_accuracy()
+        self.precision = self._compute_precision()
+        self.recall = self._compute_recall()
+
+    def _compute_confusion_matrix(self):
+        confusion_matrix = np.zeros((2, 2), dtype=int)
+        for true_label, predicted_label in zip(self.true_labels, self.predicted_labels):
+            if true_label == -1 and predicted_label == -1:
+                confusion_matrix[0, 0] += 1  # True Marah, Predicted Marah
+            elif true_label == -1 and predicted_label == 1:
+                confusion_matrix[0, 1] += 1  # True Marah, Predicted Tidak Marah
+            elif true_label == 1 and predicted_label == -1:
+                confusion_matrix[1, 0] += 1  # True Tidak Marah, Predicted Marah
+            elif true_label == 1 and predicted_label == 1:
+                confusion_matrix[1, 1] += 1  # True Tidak Marah, Predicted Tidak Marah
+        return confusion_matrix
+
+    def _compute_accuracy(self):
+        return np.sum(np.diag(self.confusion_matrix)) / np.sum(self.confusion_matrix)
+
+    def _compute_precision(self):
+        presisi_marah = self.confusion_matrix[0, 0] / (self.confusion_matrix[0, 0] + self.confusion_matrix[1, 0]) if (self.confusion_matrix[0, 0] + self.confusion_matrix[1, 0]) > 0 else 0
+        presisi_tidak_marah = self.confusion_matrix[1, 1] / (self.confusion_matrix[1, 1] + self.confusion_matrix[0, 1]) if (self.confusion_matrix[1, 1] + self.confusion_matrix[0, 1]) > 0 else 0
+        return (presisi_marah + presisi_tidak_marah) / 2
+
+    def _compute_recall(self):
+        recall_marah = self.confusion_matrix[0, 0] / (self.confusion_matrix[0, 0] + self.confusion_matrix[0, 1]) if (self.confusion_matrix[0, 0] + self.confusion_matrix[0, 1]) > 0 else 0
+        recall_tidak_marah = self.confusion_matrix[1, 1] / (self.confusion_matrix[1, 1] + self.confusion_matrix[1, 0]) if (self.confusion_matrix[1, 1] + self.confusion_matrix[1, 0]) > 0 else 0
+        return (recall_marah + recall_tidak_marah) / 2
+
+    def get_metrics(self):
+        accuracy_percentage = "{:.0f}%".format(self.accuracy * 100)
+        precision_percentage = "{:.0f}%".format(self.precision * 100)
+        recall_percentage = "{:.0f}%".format(self.recall * 100)
+        return self.confusion_matrix, accuracy_percentage, precision_percentage, recall_percentage
+
+## Hasil Single Audio 
+@app.route('/HasilSingleAudio', methods=['POST'])
+def hasil_single_audio():
+    if 'file' not in request.files or 'label_manual' not in request.form:
+        return redirect('/SingleAudio')
+
+    audio_file = request.files['file']
+    label_manual = request.form['label_manual']
+
+    if audio_file.filename == '':
+        return redirect('/SingleAudio')
+
+    file_name = audio_file.filename
+    temp_file_path = 'temp_audio.wav'
+
+    audio_processor = AudioDataManager(audio_file)
+    audio_processor.save_temp_file(temp_file_path)
+
+    nada, intonasi, volume = audio_processor.extract_features(temp_file_path)
+    os.remove(temp_file_path)
+
+    if nada is not None and intonasi is not None and volume is not None and label_manual:
+        try:
+            db_manager = DatabaseManager()
+            db_manager.insert_audio_data(file_name, nada, intonasi, volume, label_manual)
+
+            session['nada'] = nada
+            session['intonasi'] = intonasi
+            session['volume'] = volume
+            session['file_name'] = file_name
+            session['label_manual'] = label_manual
+
+            db_manager.close()
+            return redirect('/HasilSingleAudio')
+
+        except Exception as e:
+            print("Error inserting data into database:", e)
+            return "Error occurred. Please try again later."
+
+    return "Error extracting audio features. Please try again with a different file."
+
+@app.route('/HasilSingleAudio')
+def hasil_single_audio_page():
+    try:
+        db_manager = DatabaseManager()
+        data = db_manager.get_data_from_database()
+        db_manager.close()
+    except Exception as e:
+        print("Error retrieving data from database:", e)
+        return "Terjadi kesalahan saat mengambil data dari database."
+
+    nada = session.get('nada')
+    intonasi = session.get('intonasi')
+    volume = session.get('volume')
+    file_name = session.get('file_name')
+    label_manual = session.get('label_manual')
+
+    if nada is not None and intonasi is not None and volume is not None:
+        nada = round(float(nada), 3)
+        intonasi = round(float(intonasi), 3)
+        volume = round(float(volume), 3)
+
+        angry_samples = np.array([
+            [round(float(entry['nada_ori']), 3), round(float(entry['intonasi_ori']), 3), round(float(entry['volume_ori']), 3)]
+            for entry in data if entry['label_manual'] == 'Marah'
+        ], dtype=float)
+
+        non_angry_samples = np.array([
+            [round(float(entry['nada_ori']), 3), round(float(entry['intonasi_ori']), 3), round(float(entry['volume_ori']), 3)]
+            for entry in data if entry['label_manual'] == 'Tidak Marah'
+        ], dtype=float)
+
+        if label_manual == 'Marah' and len(angry_samples) > 0:
+            angry_samples = angry_samples[:-1]
+        elif label_manual == 'Tidak Marah' and len(non_angry_samples) > 0:
+            non_angry_samples = non_angry_samples[:-1]
+
+        X_train = np.vstack((angry_samples, non_angry_samples))
+        y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
+
+        new_sample = np.array([[nada, intonasi, volume]], dtype=float)
+        gamma = 0.01
+
+        svm = SVMRBF(gamma)
+        predicted_class, prediction_value, kernel_values, calculation_steps = svm.predict(X_train, y_train, new_sample)
+
+        prediction_result = "Marah" if predicted_class[0] == -1 else "Tidak Marah"
+
+        try:
+            db_manager = DatabaseManager()
+            db_manager.update_audio_data(file_name, prediction_result)
+            db_manager.close()
+        except Exception as e:
+            print("Error updating data in database:", e)
+            return "Terjadi kesalahan saat memperbarui database. Silakan coba lagi nanti."
+
+        kernel_values_display = []
+        for (x_train, x_test, kernel_value) in kernel_values:
+            formatted_x_train = ', '.join([f"{value:.3f}" for value in x_train])
+            formatted_x_test = ', '.join([f"{value:.3f}" for value in x_test])
+            kernel_values_display.append(f"Kernel antara [{formatted_x_test}] dan [{formatted_x_train}]: {kernel_value:.3f}")
+
+        prediction_value_display = f"{prediction_value[0]:.3f}"
+
+        true_labels = []
+        predicted_labels = []
+        for entry in data:
+            if entry['label_otomatis']:
+                true_labels.append(-1 if entry['label_manual'] == 'Marah' else 1)
+                predicted_labels.append(-1 if entry['label_otomatis'] == 'Marah' else 1)
+
+        true_labels.append(-1 if label_manual == 'Marah' else 1)
+        predicted_labels.append(predicted_class[0])
+
+        metrics = Metrics(true_labels, predicted_labels)
+        confusion_matrix, akurasi_persen, presisi_persen, recall_persen = metrics.get_metrics()
+
+        return render_template('hasil_singleaudio.html',
+                               nada=nada,
+                               intonasi=intonasi,
+                               volume=volume,
+                               file_name=file_name,
+                               data=data,
+                               prediction_result=prediction_result,
+                               kernel_values_display=kernel_values_display,
+                               prediction_value_display=prediction_value_display,
+                               calculation_steps=calculation_steps,
+                               confusion_matrix=confusion_matrix,
+                               akurasi_persen=akurasi_persen,
+                               presisi_persen=presisi_persen,
+                               recall_persen=recall_persen)
+
+    return "Data tidak lengkap untuk melakukan prediksi."
+
+# Form Unggah Uji
+@app.route('/FormUnggahUji', methods=['GET', 'POST'])
+def form_unggah_uji():  
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect('/FormUnggahUji')
+
+        audio_file = request.files['file']
+
+        if audio_file.filename == '':
+            return redirect('/FormUnggahUji')
+
+        # Dapatkan nama file audio
+        file_name = audio_file.filename
+
+        # Simpan file sementara
+        temp_file_path = 'temp_audio.wav'
+        audio_file.save(temp_file_path)
+
+        # Ekstrak fitur audio
+        nada, intonasi, volume = extract_audio_features(temp_file_path)
+
+        # Hapus file sementara
+        os.remove(temp_file_path)
+
+        if nada is not None and intonasi is not None and volume is not None:
+            try:
+                # Mendapatkan nilai label manual yang dipilih oleh pengguna
+                label_manual = request.form['label']
+
+                connection = mysql.connector.connect(
+                    host=db_host,
+                    user=db_user,
+                    password=db_password,
+                    database=db_database
+                )
+
+                cursor = connection.cursor()
+
+                # Masukkan data ke database
+                cursor.execute("INSERT INTO audio_data (nama_audio, nada_ori, intonasi_ori, volume_ori, label_manual) VALUES (%s, %s, %s, %s, %s)", (file_name, nada, intonasi, volume, label_manual))
+                connection.commit()
+
+                # Simpan nilai-nilai dalam session
+                session['nada'] = nada
+                session['intonasi'] = intonasi
+                session['volume'] = volume
+                session['file_name'] = file_name
+
+                cursor.close()
+                connection.close()
+
+                return render_template('form-unggah-uji.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
+
+            except Exception as e:
+                print("Error inserting data into database:", e)
+                print("Type of feature values:", type(nada), type(intonasi), type(volume))
+                return "Error occurred. Please try again later."
+
+        else:
+            return "Error extracting audio features. Please try again with a different file."
+
+    elif request.method == 'GET':
+        # Nilai default jika belum ada file audio yang diproses
+        nada = None
+        intonasi = None
+        volume = None
+        return render_template('form-unggah-uji.html')
+    
+#Form Unggah Latih
+@app.route('/FormUnggahLatih', methods=['GET', 'POST'])
+def form_unggah_latih():
+    if request.method == 'POST':
+        if 'file' not in request.files:
+            return redirect('/FormUnggahLatih')
+
+        audio_file = request.files['file']
+
+        if audio_file.filename == '':
+            return redirect('/FormUnggahLatih')
+
+        # Dapatkan nama file audio
+        file_name = audio_file.filename
+
+        # Simpan file sementara
+        temp_file_path = 'temp_audio.wav'
+        audio_file.save(temp_file_path)
+
+        # Ekstrak fitur audio
+        nada, intonasi, volume = extract_audio_features(temp_file_path)
+
+        # Hapus file sementara
+        os.remove(temp_file_path)
+
+        if nada is not None and intonasi is not None and volume is not None:
+            try:
+                # Mendapatkan nilai label manual yang dipilih oleh pengguna
+                label_manual = request.form['label']
+
+                connection = mysql.connector.connect(
+                    host=db_host,
+                    user=db_user,
+                    password=db_password,
+                    database=db_database
+                )
+
+                cursor = connection.cursor()
+
+                # Masukkan data ke tabel audio_latih
+                cursor.execute(
+                    "INSERT INTO audio_latih (nama_audio_latih, nada_ori_latih, intonasi_ori_latih, volume_ori_latih, label_manual_latih) VALUES (%s, %s, %s, %s, %s)",
+                    (file_name, nada, intonasi, volume, label_manual)
+                )
+                connection.commit()
+
+                # Simpan nilai-nilai dalam session
+                session['nada'] = nada
+                session['intonasi'] = intonasi
+                session['volume'] = volume
+                session['file_name'] = file_name
+
+                cursor.close()
+                connection.close()
+
+                return render_template('form-unggah-latih.html', nada=nada, intonasi=intonasi, volume=volume, file_name=file_name)
+
+            except Exception as e:
+                print("Error inserting data into database:", e)
+                print("Type of feature values:", type(nada), type(intonasi), type(volume))
+                return "Error occurred. Please try again later."
+
+        else:
+            return "Error extracting audio features. Please try again with a different file."
+
+    elif request.method == 'GET':
+        # Nilai default jika belum ada file audio yang diproses
+        nada = None
+        intonasi = None
+        volume = None
+        return render_template('form-unggah-latih.html')
+
+if __name__ == '__main__':
+    app.run(debug=True)

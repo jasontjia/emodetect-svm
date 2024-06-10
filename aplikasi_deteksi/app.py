@@ -17,7 +17,7 @@ db_database = 'audio'
 # Path ke folder audio_ori di luar direktori static
 AUDIO_FOLDER = os.path.join(app.root_path, 'audio_ori')
 
-# Fungsi untuk mendapatkan data uji dari database
+# Fungsi untuk menampilkan data uji dari database
 def get_data_from_database():
     try:
         connection = mysql.connector.connect(
@@ -42,7 +42,7 @@ def get_data_from_database():
         print("Error:", e)
         return None
 
-# Fungsi untuk mendapatkan data uji dari database
+# Fungsi untuk menampilkan data latih dari database
 def tarik_database():
     try:
         connection = mysql.connector.connect(
@@ -451,7 +451,7 @@ def hasil_single_audio():
     else:
         return "Error extracting audio features. Please try again with a different file."
 
-# Perhitungan SVM RBF Single Audio
+# Perhitungan SVM RBF Single Audiog
 def rbf_kernel(x, x_prime, gamma):
     distance_squared = np.sum((x - x_prime)**2)
     kernel_value = np.exp(-gamma * distance_squared)

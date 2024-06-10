@@ -46,12 +46,13 @@ def predict_svm_rbf(X_train, y_train, X_test, gamma):
     return predictions.astype(int), prediction_values, kernel_values, calculation_steps
 
 # Contoh data fitur untuk dua kelas: marah dan tidak marah
-angry_samples = np.array([[2209.671, 5.591, 0.07]])  # Fixed to have 3 features
+angry_samples = np.array([[1773.406, 3.432, 0.003],
+                          [1365.412, 3.637, 0.007]])  # Fixed to have 3 features
 
-non_angry_samples = np.array([[1773.406, 3.432, 0.003],
-                              [1727.075, 3.396, 0.003],
-                              [1365.412, 3.637, 0.007], 
-                              [1139.116, 4.283, 0.008]])
+non_angry_samples = np.array([[1727.075, 3.396, 0.003], 
+                              [1139.116, 4.283, 0.008],
+                              [1776.637, 3.533, 0.004],
+                              [2209.671, 5.591, 0.070]])
 
 # Gabungkan kedua set data untuk pelatihan
 X_train = np.vstack((angry_samples, non_angry_samples))
@@ -61,8 +62,7 @@ y_train = np.array([-1] * len(angry_samples) + [1] * len(non_angry_samples))
 
 # Prediksi kelas untuk contoh baru
 # Misalnya, kita memiliki contoh baru sebagai berikut:
-new_sample = np.array([[1776.637, 3.533, 0.004],
-                       [1774.55, 3.387, 0.028]])
+new_sample = np.array([[1774.55, 3.387, 0.028]])
 
 # Parameter gamma untuk kernel RBF
 gamma = 0.01
